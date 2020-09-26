@@ -3,13 +3,18 @@
 
 * Jesús Lara Jáuregui
 
-**** Problem 1 ******
-*********************
+		*********************
+		***** PROBLEM 1 *****
+		*********************
+		
+/*****Part 1*****. Write an e-class program “myreg1” which takes in a varlist and performs an OLS regression of y on X
+on as follows*/
+
 clear
 set more off
-global home "C:\Users\User\Documents\Fall 2020 UMass\797B\Problem Sets\Probem Set 1"
-global data "C:\Users\User\Documents\Fall 2020 UMass\797B\Problem Sets\Probem Set 1"
-cd "C:\Users\User\Documents\Fall 2020 UMass\797B\Problem Sets\Probem Set 1"
+global home "C:\Users\User\Documents\GitHub\797b-problem-sets"
+global data "C:\Users\User\Documents\GitHub\797b-problem-sets"
+cd "C:\Users\User\Documents\GitHub\797b-problem-sets"
 use census_sample_30_50, clear 
 
 //(a)
@@ -20,42 +25,52 @@ cap program drop myreg1
 program myreg1, eclass
 syntax varlist 
 tokenize `varlist'
-  local y "`1'"
+// (a) define locals "y" and "X" using macro shift
+  local y "`1'"    
   macro shift 1
   local X "`*'"
   
 //using MATA to define y and X matrices
    
+// b) open MATA, and using “st_view”, define the y and X matrices within MATA
+
    mata: M=y=X=V=.
-   mata:st_view(M, .,("`y'" , "`X'"), 0)
+   mata:st_view(M, .,("`y'" , "`X'"), 0) /
    mata:st_subview(y,M,.,1)
-   mata:st_subview(X,M,.,(2\.))
+   mata:st_subview(X,M,.,(2\.)) 
    mata:n=rows(X)
    mata:k=cols(X)
    mata: c=J(rows(X),1,1)
    
 
 
-   // calculating the coefficent vector (beta hat)
+   // c) calculating the coefficent vector (beta hat) using matrix operations
 
    mata:XX = cross(X,1  ,  X,1)
    mata:Xy = cross(X,1  , y,0)
    mata:b=invsym(XX)*Xy
 
-   
+ // (d) calculate OLS variance estimate of β under homoscedasticity :  V (β) = 1
+
    mata: e=y-(X,c)*b
    
    mata: s2=cross(e,e)/(n-k) 
    mata: V=s2*invsym(XX)
+
+   // (e) pass the vector βˆ and matrix ˆ V (β) back to Stata
+   
    mata: st_matrix("V",V)
    mata:st_matrix( "b" , b) 
  // show the b matrix
+//(f) post vector βˆ and matrix ˆ V (β) uisng ereturn post in the e(b) and e(V) matrices
 
    matrix list b
    matrix list V
    
   
 end
+
+// (g) confirm your answers are correct by checking answer vis a vis the command: regress y x1 x2 x3
 
 myreg1 lnwage hieduc exp exp2 
 quiet reg lnwage hieduc exp exp2
@@ -63,48 +78,49 @@ matrix list e(b)
 matrix list e(V)
 
 
-/*
-for  (i=1; i<=n: i++){
- mata: X_`i'=(X[`i',.])'
- mata: y_`i'=(y[`i',.])
- mata: XXinv_`i'=invsym((X_`i')*(X_`i')')
- mata: Xy_`i' = X_`i'*y_`i'
- mata: argsum_`i'=(XXinv_`i')*( Xy_`i')
-}
 
-*/
 
-/// (b)
+/****** Part 1 Write an e-class program called “myreg2” which takes in a varlist and performs OLS regression of y on
+X as follows: */
 
 cap program drop myreg2
 program myreg2, eclass
-syntax varlist 
+syntax varlist [if] [in]
 tokenize `varlist'
+
+// a) define locals “y” and “X” using macro shift
+
   local y "`1'"
   macro shift 1
   local X "`*'"
   
-//using MATA to define y and X matrices
+//(b) open MATA, and using “st_view”, define the y and X matrices within MATA
    
    mata: M=y=X=V=.
    mata:st_view(M, .,("`y'" , "`X'"), 0)
    mata:st_subview(y,M,.,1)
-   mata:st_subview(X,M,.,(2\.))
+   mata:st_subview(X,M,.,2\.)
    mata: c=J(rows(X),1,1)
    mata: X=(X,c)
 
    mata: myols(y, X)
+
+   //f) post vector βˆ and matrix ˆ V (β) uisng ereturn post in the e(b) and e(V) matrices
    
  ereturn post `b'
    matrix list b
    matrix list V
 end
 
+// (c) calculate OLS coefficient vector βˆ 
+
 cap mata mata drop myols()
 mata:
 void myols(matrix y, matrix X){
 
-b=SXX=SXy=.
+b=SXX=SXy=G=.
+
+// (d) calculate OLS variance estimate of βˆ under arbitrary heteroscedasticity
 
 // X[i,.] Dimension 1x(k+1) 
 // X[i,.]' Dimension (k+1)x1 
@@ -116,29 +132,31 @@ for(i=1; i<=rows(X); i++){
 			}
 else {
 
-				SXX=SXX + (X[i,.]'*X[i,.]) // Dimension (k+1)x(k+1)
-				SXy=SXy + (X[i,.]'*y[i,1]) // Dimension (k+1)x1
+				SXX=SXX + (X[i,.]')*X[i,.] // Dimension (k+1)x(k+1)
+				SXy=SXy + (X[i,.]')*y[i,1] // Dimension (k+1)x1
 			}
 		}
-
-e=y-X*b //Dimension nx1
+b=invsym(SXX)*(SXy)  // Dimension (k+1)x1	
+e=y-X*b
+//Dimension nx1
 		
 for(i=1; i<=rows(X); i++){
 			if(i==1){
-				G=(e[i,1]*e[i,1])*(X[i,.]'*X[i,.])
+				G=(e[i,1]*e[i,1])*(X[i,.]')*X[i,.] // Dimension (k+1)x(k+1)
 			}
 else {
-				G=G+(e[i,1]*e[i,1])*(X[i,.]'*X[i,.])
+				G=G+(e[i,1]*e[i,1])*(X[i,.]')*X[i,.] //
 				
 			}
 		}
 
 		
-		b=invsym(SXX)*(SXy)  // Dimension (k+1)x1	
 		 
-		r=(rows(X)/(rows(X)-cols(X)+1))
-	    V=invsym(X'*X)*(r*G)*invsym(X'*X) // ¿Qué está pasando Dr. García?
+		 
+		r=(rows(X)/(rows(X)-rows(b))) // Dim (1x1)
+	    V=invsym(SXX)*(r*G)*invsym(SXX) // 
 		
+//(e) pass the vector βˆ and matrix ˆ V (β) back to Stata
 st_matrix("b", b)
 st_matrix("V",V)
 
@@ -146,6 +164,8 @@ st_matrix("V",V)
 
 
 end
+
+// (g) confirm your answers are correct by checking answer vis a vis the command: regress y x1 x2 x3, robust
 
 myreg2 lnwage hieduc exp exp2 
 quiet reg lnwage hieduc exp exp2, robust
@@ -157,7 +177,7 @@ matrix list e(V)
 *** PROBLEM 2 ***
 *****************
 
-*1. Estimate Poission regr. ussing maximum Likelihood 
+*1Program an .ado file called “mypois.ado” that estimates poisson regression using maximum likelihood
 
 cap program drop mypois_eval
 program mypois_eval , eclass
@@ -186,17 +206,25 @@ tokenize `varlist'
 ml model d0 mypois_eval (`y' = `X')
 ml maximize
 end
-
+*2. Using data from http://www.ats.ucla.edu/stat/stata/dae/poisson_sim , do the following:
 use https://stats.idre.ucla.edu/stat/stata/dae/poisson_sim, clear
-hist(num_awards)
-summarize(num_awards)
 
+*3. Show a histogram of the outcome (num_awards), and report the mean and variance. 
+
+hist(num_awards), title("Number of Awards") color("orange")
+
+quiet summarize(num_awards)
+
+sca mean=r(mean)
+sca variance= r(Var)
+
+mat p3=(mean,variance)
+mat colnames p3="Mean" "Variance"
+mat rownames p3="Number of awards"
+
+*5. Estimate coefficients using built in command: poisson num_awards i.prog math Confirm 4 and 5 give the same results
 
 mypois num_awards i.prog math
-*2
-use https://stats.idre.ucla.edu/stat/stata/dae/poisson_sim, clear
-hist(num_awards)
-summarize(num_awards)
 
 *3 :O
 
