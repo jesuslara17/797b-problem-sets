@@ -320,7 +320,7 @@ mata: MPOIS_`i'=mean(sim_`i'[.,2])
 
 mata: MS=(MOLS_1,MPOIS_1,MOLS_2,MPOIS_2,MOLS_3,MPOIS_3 \ MOLS_4,MPOIS_4,MOLS_5,MPOIS_5,MOLS_6,MPOIS_6)
 
-mata: MS
+mata: st_matrix("MS",MS)
 
 
 ****************
@@ -516,6 +516,12 @@ mata: F_1
 
 mata: F_0=J(2,2,rows(S))-(F_1+J(2,2,s_nt))
 mata: F_0
+
+mata:st_matrix("F_1",F_1)
+mata:st_matrix("F_0",F_0)
+
+mat rownames F_1="lnemp" "lnemp2"
+mat colnames F_1="Cluster" "Bootstrap"
 
 
 *set trace on 
