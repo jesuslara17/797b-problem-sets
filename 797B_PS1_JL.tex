@@ -7,31 +7,53 @@
 
 
 
+
+
+
+
 \author{Jesús Lara Jáuregui}
 \title{Problem Set 1}
 \maketitle
 
 
-
 \section{Problem 1. OLS in MATA}
 \subsection{Part 1}
-
-
-
+\ Results with myreg1
 \begin{stlog}\input{797B_PS1_JL_1.log.tex}\end{stlog}
-/subsection{Part 2}
+\ Results with Stata OlS command
 \begin{stlog}\input{797B_PS1_JL_2.log.tex}\end{stlog}
+\subsection{Part 2}
+\ Results with myreg2
+\begin{stlog}\input{797B_PS1_JL_3.log.tex}\end{stlog}
+\ Results with Stata's OLS and robust standard errors
+\begin{stlog}\input{797B_PS1_JL_4.log.tex}\end{stlog}
 
-/section{Problem 2. Poisson using Maximum Likelihood}
+\section{Problem 2. Poisson using Maximum Likelihood}
 
-If $y_i$ is distributed Poission with mean $exp(X^{'}_i /beta)$, hence the likelihood function for a sample of N observations is given by:
+If $y_i$ is distributed Poission with mean $exp(X^{'}_i \beta)$, hence the likelihood function for a sample of $N$ observations is given by:
+
+$$ L(\beta)=\prod_{i=1}^{N}\frac{1}{y_{i}!}exp((X^{'}\beta)y_i)exp(-exp(X^{'}\beta))$$
+
 
 And taking logs we get:
 
-\begin{stlog}\input{797B_PS1_JL_3.log.tex}\end{stlog}
+$$lnL(\beta)=\sum_{i}^{N}[-exp(X^{'}\beta)+y_i exp(X^{'}\beta)-ln(y_i !)]$$
+
+Which is the form we use for pur maximum-likelihood estimation
+\begin{stlog}\input{797B_PS1_JL_5.log.tex}\end{stlog}
 \begin{center}
-    \includegraphics{797B_PS1_JL_3.pdf}
+    \includegraphics{797B_PS1_JL_5.pdf}
 \end{center}
+\input{P2_MV.tex}
+\input{Table_P2.tex}
+\section{Problem 3. Mean Squared Error simulation - Sample Size and Distribution}
+
+\input{MS.tex}
+\section{Problem 4. Small number of clusters - Wild Bootstrap}
+\input{F_1.tex}
+\input{F_0.tex}
+\input{F_1_R.tex}
+\input{F_0_R.tex}
 
 \end{document}
 

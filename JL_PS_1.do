@@ -18,8 +18,11 @@ texdoc init 797B_PS1_JL, replace
 \usepackage{graphicx}
 \usepackage{geometry}
 \usepackage{rotating}
-\usepackage{amssymb}
 \begin{document}
+
+
+
+
 
 
 
@@ -28,24 +31,23 @@ texdoc init 797B_PS1_JL, replace
 \maketitle
 
 
-
 tex*/
 
 
-/*tex 
-\section{Problem 1. OLS in MATA}
-\subsection{Part 1}
 
-
-
-tex*/
 
 
 
 		*********************
 		***** PROBLEM 1 *****
 		*********************
-		
+
+/*tex 
+\section{Problem 1. OLS in MATA}
+\subsection{Part 1}
+tex*/
+
+
 /*Part 1*****. Write an e-class program “myreg1” which takes in a varlist and performs an OLS regression of y on X
 on as follows*/
 
@@ -55,7 +57,7 @@ on as follows*/
 
 use census_sample_30_50, clear 
 
-label variable lnwage Wage (log)
+label variable lnwage "Wage (log)"
 label variable exp Experience
 label variable exp2 Experience2
 //(a)
@@ -136,7 +138,7 @@ texdoc stlog close
 *****PART 2
 
 /*tex
-/subsection{Part 2}
+\subsection{Part 2}
 tex*/
 
 cap program drop myreg2
@@ -248,12 +250,18 @@ texdoc stlog close
 
 /*tex
 
-/section{Problem 2. Poisson using Maximum Likelihood}
+\section{Problem 2. Poisson using Maximum Likelihood}
 
-If $y_i$ is distributed Poission with mean $exp(X^{'}_i \beta)$, hence the likelihood function for a sample of N observations is given by:
+If $y_i$ is distributed Poission with mean $exp(X^{'}_i \beta)$, hence the likelihood function for a sample of $N$ observations is given by:
+
+$$ L(\beta)=\prod_{i=1}^{N}\frac{1}{y_{i}!}exp((X^{'}\beta)y_i)exp(-exp(X^{'}\beta))$$
+
 
 And taking logs we get:
 
+$$lnL(\beta)=\sum_{i}^{N}[-exp(X^{'}\beta)+y_i exp(X^{'}\beta)-ln(y_i !)]$$
+
+Which is the form we use for pur maximum-likelihood estimation
 tex*/
 
 *1Program an .ado file called “mypois.ado” that estimates poisson regression using maximum likelihood
@@ -303,27 +311,38 @@ quiet summarize(num_awards)
 sca mean=r(mean)
 sca variance= r(Var)
 
-mat p3=(mean,variance)
-mat colnames p3="Mean" "Variance"
-mat rownames p3="Number of awards"
+mat P2_MV=(mean,variance)
+mat colnames P2_MV="Mean" "Variance"
+mat rownames P2_MV="Number of awards"
 
+esttab m(P2_MV,fmt(%9.2f)) using P2_MV.tex, replace title(Number of Awards) nomtitles booktabs
+
+tex \input{P2_MV.tex}
 *5. Estimate coefficients using built in command: poisson num_awards i.prog math Confirm 4 and 5 give the same results
 
 mypois num_awards i.prog math
-eststo mypois
+estimates store mypois
 
 *3 :O
 
 *4
 poisson num_awards i.prog math 
-eststo Stata_Poisson
+estimates store Stata_Poisson
+
+esttab Stata_Poisson mypois using Table_P2.tex, b(%7.4f) se(%7.4f) label replace compress mtitle("Stata Poisson" "mypois") title(Poisson Estimation)
+
+tex \input{Table_P2.tex}
+
 
 ****************
 ****************
 ****Problem3****
 ****************
 ****************
+/*tex 
+\section{Problem 3. Mean Squared Error simulation - Sample Size and Distribution}
 
+tex*/
 
 
 * 3 Part 1
@@ -368,7 +387,7 @@ quiet{
 foreach N of numlist 50 1000{
 foreach sigma of numlist 0.01 0.1 1{
 
-forvalues i=1/1000{
+forvalues i=1/10{
 di `i'
 
 OLSPOIS `N' `sigma'
@@ -384,14 +403,14 @@ else {
 matrix sim_`j'= sim_`j' \ [MSE_OLS_`i', MSE_POIS_`i']
 }
 
-}
-}
 
 }
-
-}
-
 local j=`j'+1
+}
+
+}
+
+
 }
 
 *1-3 N=50 (.01, .1 1)
@@ -411,6 +430,13 @@ mata: MS=(MOLS_1,MPOIS_1,MOLS_2,MPOIS_2,MOLS_3,MPOIS_3 \ MOLS_4,MPOIS_4,MOLS_5,M
 
 mata: st_matrix("MS",MS)
 
+matrix rownames MS= "N=50" "N=1000"
+matrix colnames MS= "0.01 OLS" "0.01 POIS" "0.1 OLS" "0.1 POIS" "1 OLS" "1 POIS"
+
+esttab m(MS) using MS.tex, replace title(Average of the squared error (MSE): OLS and Poisson) nomtitles booktabs
+
+tex \input{MS.tex}
+
 
 ****************
 ****************
@@ -418,21 +444,12 @@ mata: st_matrix("MS",MS)
 ****************
 ****************
 
+/*tex 
+\section{Problem 4. Small number of clusters - Wild Bootstrap}
+tex*/
+
 **** Making the program 
 
-/**OJO AL PIOJO: SI NINGUNA CBSA RESULTA TRATADA EL PROGRAMA SE ROMPE ALV 
-*idea: if mean(treatment)>0{ (loop running regressions)
-}
-
-
-else { 
-
-sca bsig_`var'=.
-sca sig_`var'=.
-
-}
-
-*/
 
 cap program drop randsim
 program randsim, rclass
@@ -508,7 +525,6 @@ end
 
 use 25_MSA_panel, clear
 keep if naics==10
-*set trace on 
 xtset cbsa time 
 
 *4.1
@@ -521,7 +537,7 @@ randsim lnemp cbsa time
 
 * remember to put 1000 sims
 
-forvalues i=1/1000{
+forvalues i=1/10{
 di `i'
 randsim lnemp cbsa time 
 
@@ -557,8 +573,22 @@ mata: F_1
 mata: F_0=J(2,2,rows(S))-(F_1+J(2,2,s_nt))
 mata: F_0
 
-* Frecuency of 1 
 
+mata:st_matrix("F_1",F_1)
+mata:st_matrix("F_0",F_0)
+
+mat rownames F_1="lnemp" "lnemp2"
+mat colnames F_1="Cluster" "Bootstrap"
+
+mat rownames F_0="lnemp" "lnemp2"
+mat colnames F_0="Cluster" "Bootstrap"
+
+esttab m(F_1) using F_1.tex, replace title(Coefficient of treatment significant? Frecuency) nomtitles booktabs
+
+esttab m(F_0) using F_0.tex, replace title(Coefficient of treatment insignificant? Frecuency) nomtitles booktabs
+
+tex \input{F_1.tex}
+tex \input{F_0.tex}
 *Rows: lnemp lnemp2
 *Columns: robust vs bootstrap
  
@@ -570,7 +600,7 @@ keep if naics==10
 keep if cbsa== 35620 | cbsa== 31100 | cbsa== 14460 | cbsa== 19100 | cbsa== 33100 | cbsa==16980 | cbsa==38300 | cbsa==37980
 
 ***repeat
-forvalues i=1/100{
+forvalues i=1/10{
 di `i'
 randsim lnemp cbsa time 
 
@@ -612,6 +642,16 @@ mata:st_matrix("F_0",F_0)
 mat rownames F_1="lnemp" "lnemp2"
 mat colnames F_1="Cluster" "Bootstrap"
 
+mat rownames F_0="lnemp" "lnemp2"
+mat colnames F_0="Cluster" "Bootstrap"
+
+esttab m(F_1) using F_1_R.tex, replace title(Coefficient of treatment significant? Frecuency (few clusters)) nomtitles booktabs
+
+esttab m(F_0) using F_0_R.tex, replace title(Coefficient of treatment insignificant? Frecuency (few clusters)) nomtitles booktabs
+
+tex \input{F_1_R.tex}
+tex \input{F_0_R.tex}
+
 
 */
 
@@ -621,5 +661,12 @@ mat colnames F_1="Cluster" "Bootstrap"
 \end{document}
 
 tex*/
+
+**********************
+******* PROBLEM 5*****
+**********************
+
+tex \section{Problem 5.  OLS, matching, propensity scores}
+
 
 texdoc close

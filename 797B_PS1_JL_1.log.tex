@@ -14,20 +14,3 @@ r2   1.595e-07   .00001683
 r3  -4.035e-09  -3.770e-07   8.579e-09
 r4  -.00001749  -.00017676   3.899e-06   .00211062
 {\smallskip}
-. quiet reg lnwage hieduc exp exp2
-{\smallskip}
-. matrix list e(b)
-{\smallskip}
-e(b)[1,4]
-        hieduc         exp        exp2       _cons
-y1   .08264541   .02523881  -.00037668   1.3094414
-{\smallskip}
-. matrix list e(V)
-{\smallskip}
-symmetric e(V)[4,4]
-            hieduc         exp        exp2       _cons
-hieduc   1.195e-06
-   exp   1.595e-07   .00001683
-  exp2  -4.035e-09  -3.770e-07   8.580e-09
- _cons   -.0000175  -.00017676   3.899e-06   .00211066
-{\smallskip}
