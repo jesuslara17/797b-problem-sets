@@ -238,6 +238,8 @@ poisson num_awards i.prog math
 ****************
 
 * 3 Part 1
+clear 
+
 cap program drop OLSPOIS
 program OLSPOIS, eclass 
 args N sigma
@@ -266,14 +268,14 @@ end
 
 
 *******Running the program
-use census_sample_30_50, clear 
 
 
 
 set seed 5555 
 
+local j=1
 quiet{
-forvalues j=1/6{
+
 foreach N of numlist 50 1000{
 foreach sigma of numlist 0.01 0.1 1{
 
@@ -295,9 +297,17 @@ matrix sim_`j'= sim_`j' \ [MSE_OLS_`i', MSE_POIS_`i']
 
 }
 }
+
 }
+
 }
+
+local j=`j'+1
 }
+
+*1-3 N=50 (.01, .1 1)
+*4_6 N=1000 (.01, .1 1)
+  
 
 *** Getting matrix of averages averages
 forvalues i=1/6{
@@ -305,6 +315,8 @@ mata: sim_`i'=st_matrix("sim_`i'")
 mata: MOLS_`i'=mean(sim_`i'[.,1])
 mata: MPOIS_`i'=mean(sim_`i'[.,2])
 }
+
+*rows N(50,1000) *columns(0.01,0.1,1)
 
 mata: MS=(MOLS_1,MPOIS_1,MOLS_2,MPOIS_2,MOLS_3,MPOIS_3 \ MOLS_4,MPOIS_4,MOLS_5,MPOIS_5,MOLS_6,MPOIS_6)
 
@@ -359,7 +371,7 @@ replace treatment=1 if random<=0.25
 }
 *Generate placebo 
 
-gen `y'2= `y'+0.5*treatment
+gen `y'2= `y'+0.05*treatment
 
 ***Run regressions
 
@@ -368,6 +380,8 @@ foreach var of varlist `y' `y'2{
 quiet su treatment
 if r(mean)>0 {
 
+sca no_treated=0
+ 
 quiet reg `var' treatment i.`unit' i.`t', vce(cluster `unit') 
 quiet boottest treatment, nogr
 local pvalue_`var'= 2*ttail(e(df_r),abs(_b[treatment]/_se[treatment]))
@@ -393,8 +407,9 @@ sca list sig_`var' bsig_`var'
 
 else {
 
-sca bsig_`var'=.
-sca sig_`var'=.
+sca no_treated=1
+sca sig_`var'=0
+sca bsig_`var'=0
 }
 }
 drop cbsa_id `y'2 random treatment
@@ -416,7 +431,8 @@ randsim lnemp cbsa time
 *** (b) Run the loop
 
 * remember to put 1000 sims
-forvalues i=1/20{
+
+forvalues i=1/1000{
 di `i'
 randsim lnemp cbsa time 
 
@@ -424,13 +440,14 @@ sca sig_lnemp_`i'= sig_lnemp
 sca bsig_lnemp_`i'= bsig_lnemp
 sca sig_lnemp2_`i'= sig_lnemp2
 sca bsig_lnemp2_`i'= bsig_lnemp2
+sca no_treated_`i'=no_treated
 
 if `i'== 1 {
-matrix S=(sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp2_`i',bsig_lnemp2_`i')
+matrix S=(sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp2_`i',bsig_lnemp2_`i',no_treated_`i')
 } 
 else {
 
-matrix S= S \ [sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp2_`i', bsig_lnemp2_`i']
+matrix S= S \ [sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp2_`i', bsig_lnemp2_`i',no_treated_`i']
 }
 
 }
@@ -441,12 +458,15 @@ mata: s_1r=sum(S[.,1])
 mata: s_1b=sum(S[.,2])
 mata: s_2r=sum(S[.,3])
 mata: s_2b=sum(S[.,4])
+mata: s_nt=sum(S[.,5])
 
+*rows: lnemp and lnemp2
+*columns: cluster vs bootstrap
 mata: F_1=(s_1r,s_1b\s_2r,s_2b)
-mata: F_0=J(2,2,20)-F_1
 mata: F_1 
-mata: F_0
 
+mata: F_0=J(2,2,rows(S))-(F_1+J(2,2,s_nt))
+mata: F_0
 
 * Frecuency of 1 
 
@@ -461,7 +481,7 @@ keep if naics==10
 keep if cbsa== 35620 | cbsa== 31100 | cbsa== 14460 | cbsa== 19100 | cbsa== 33100 | cbsa==16980 | cbsa==38300 | cbsa==37980
 
 ***repeat
-forvalues i=1/20{
+forvalues i=1/100{
 di `i'
 randsim lnemp cbsa time 
 
@@ -469,13 +489,14 @@ sca sig_lnemp_`i'= sig_lnemp
 sca bsig_lnemp_`i'= bsig_lnemp
 sca sig_lnemp2_`i'= sig_lnemp2
 sca bsig_lnemp2_`i'= bsig_lnemp2
+sca no_treated_`i'=no_treated
 
 if `i'== 1 {
-matrix S=(sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp2_`i',bsig_lnemp2_`i')
+matrix S=(sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp2_`i',bsig_lnemp2_`i',no_treated_`i')
 } 
 else {
 
-matrix S= S \ [sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp2_`i', bsig_lnemp2_`i']
+matrix S= S \ [sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp2_`i', bsig_lnemp2_`i',no_treated_`i']
 }
 
 }
@@ -486,10 +507,14 @@ mata: s_1r=sum(S[.,1])
 mata: s_1b=sum(S[.,2])
 mata: s_2r=sum(S[.,3])
 mata: s_2b=sum(S[.,4])
+mata: s_nt=sum(S[.,5])
 
+*rows: lnemp and lnemp2
+*columns: cluster vs bootstrap
 mata: F_1=(s_1r,s_1b\s_2r,s_2b)
-mata: F_0=J(2,2,25)-F_1
 mata: F_1 
+
+mata: F_0=J(2,2,rows(S))-(F_1+J(2,2,s_nt))
 mata: F_0
 
 
