@@ -668,5 +668,13 @@ tex*/
 
 tex \section{Problem 5.  OLS, matching, propensity scores}
 
+use census_sample_30_50,clear
+
+*Generate treatment variable
+gen FB=0
+replace FB=1 if bpld>15000
+
+gen english=0
+replace english=1 if speakeng==3 | speakeng==4
 
 texdoc close
