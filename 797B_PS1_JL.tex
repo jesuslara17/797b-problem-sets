@@ -1,0 +1,37 @@
+\documentclass[12pt]{article}
+\usepackage{stata}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{rotating}
+\begin{document}
+
+
+
+\author{Jesús Lara Jáuregui}
+\title{Problem Set 1}
+\maketitle
+
+
+
+\section{Problem 1. OLS in MATA}
+\subsection{Part 1}
+
+
+
+\begin{stlog}\input{797B_PS1_JL_1.log.tex}\end{stlog}
+/subsection{Part 2}
+\begin{stlog}\input{797B_PS1_JL_2.log.tex}\end{stlog}
+
+/section{Problem 2. Poisson using Maximum Likelihood}
+
+If $y_i$ is distributed Poission with mean $exp(X^{'}_i /beta)$, hence the likelihood function for a sample of N observations is given by:
+
+And taking logs we get:
+
+\begin{stlog}\input{797B_PS1_JL_3.log.tex}\end{stlog}
+\begin{center}
+    \includegraphics{797B_PS1_JL_3.pdf}
+\end{center}
+
+\end{document}
+

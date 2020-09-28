@@ -1,41 +1,82 @@
-******** Do File Problem Set 1 ********
-***************************************
+*DO-FILE PS 1
 
 * Jesús Lara Jáuregui
+
+		
+
+clear
+global home "C:\Users\User\Documents\GitHub\797b-problem-sets"
+cd "$home" 
+set more off
+
+texdoc init 797B_PS1_JL, replace
+
+
+/*tex
+\documentclass[12pt]{article}
+\usepackage{stata}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{rotating}
+\usepackage{amssymb}
+\begin{document}
+
+
+
+\author{Jesús Lara Jáuregui}
+\title{Problem Set 1}
+\maketitle
+
+
+
+tex*/
+
+
+/*tex 
+\section{Problem 1. OLS in MATA}
+\subsection{Part 1}
+
+
+
+tex*/
+
+
 
 		*********************
 		***** PROBLEM 1 *****
 		*********************
 		
-/*****Part 1*****. Write an e-class program “myreg1” which takes in a varlist and performs an OLS regression of y on X
+/*Part 1*****. Write an e-class program “myreg1” which takes in a varlist and performs an OLS regression of y on X
 on as follows*/
 
-clear
-set more off
-global home "C:\Users\User\Documents\GitHub\797b-problem-sets"
-global data "C:\Users\User\Documents\GitHub\797b-problem-sets"
-cd "C:\Users\User\Documents\GitHub\797b-problem-sets"
+
+
+
+
 use census_sample_30_50, clear 
 
+label variable lnwage Wage (log)
+label variable exp Experience
+label variable exp2 Experience2
 //(a)
 
 
-**** My program
+* My program
 cap program drop myreg1
 program myreg1, eclass
 syntax varlist 
 tokenize `varlist'
-// (a) define locals "y" and "X" using macro shift
+* (a) define locals "y" and "X" using macro shift
   local y "`1'"    
   macro shift 1
   local X "`*'"
   
-//using MATA to define y and X matrices
+*using MATA to define y and X matrices
    
-// b) open MATA, and using “st_view”, define the y and X matrices within MATA
+* b) open MATA, and using “st_view”, define the y and X matrices within MATA
 
    mata: M=y=X=V=.
-   mata:st_view(M, .,("`y'" , "`X'"), 0) /
+   mata:st_view(M, .,("`y'" , "`X'"), 0) 
    mata:st_subview(y,M,.,1)
    mata:st_subview(X,M,.,(2\.)) 
    mata:n=rows(X)
@@ -72,16 +113,31 @@ end
 
 // (g) confirm your answers are correct by checking answer vis a vis the command: regress y x1 x2 x3
 
+tex\ Results with myreg1
+
+texdoc stlog
 myreg1 lnwage hieduc exp exp2 
+texdoc stlog close
+
+tex\ Results with Stata OlS command
+
+texdoc stlog
 quiet reg lnwage hieduc exp exp2
 matrix list e(b)
 matrix list e(V)
+texdoc stlog close
 
 
 
 
-/****** Part 1 Write an e-class program called “myreg2” which takes in a varlist and performs OLS regression of y on
-X as follows: */
+
+********
+
+*****PART 2
+
+/*tex
+/subsection{Part 2}
+tex*/
 
 cap program drop myreg2
 program myreg2, eclass
@@ -167,15 +223,38 @@ end
 
 // (g) confirm your answers are correct by checking answer vis a vis the command: regress y x1 x2 x3, robust
 
+tex \ Results with myreg2
+
+texdoc stlog
+
 myreg2 lnwage hieduc exp exp2 
 quiet reg lnwage hieduc exp exp2, robust
+
+texdoc stlog close
+
+tex \ Results with Stata's OLS and robust standard errors
+
+texdoc stlog
+
 matrix list e(b)
 matrix list e(V)
 
+texdoc stlog close
 
 *****************
 *** PROBLEM 2 ***
 *****************
+
+
+/*tex
+
+/section{Problem 2. Poisson using Maximum Likelihood}
+
+If $y_i$ is distributed Poission with mean $exp(X^{'}_i \beta)$, hence the likelihood function for a sample of N observations is given by:
+
+And taking logs we get:
+
+tex*/
 
 *1Program an .ado file called “mypois.ado” that estimates poisson regression using maximum likelihood
 
@@ -193,7 +272,7 @@ local t "$ML_y1"
 mlsum `lnf' = (-1)*exp(`theta') + `t'*`theta' + (-1)*lnfactorial(`t')
 
 end 
-***This has to be part of the program
+
 
 cap program drop  mypois 
 program mypois,eclass
@@ -206,12 +285,18 @@ tokenize `varlist'
 ml model d0 mypois_eval (`y' = `X')
 ml maximize
 end
+ 
+
+ 
 *2. Using data from http://www.ats.ucla.edu/stat/stata/dae/poisson_sim , do the following:
 use https://stats.idre.ucla.edu/stat/stata/dae/poisson_sim, clear
 
 *3. Show a histogram of the outcome (num_awards), and report the mean and variance. 
 
+texdoc stlog 
 hist(num_awards), title("Number of Awards") color("orange")
+texdoc stlog close 
+texdoc graph
 
 quiet summarize(num_awards)
 
@@ -225,17 +310,21 @@ mat rownames p3="Number of awards"
 *5. Estimate coefficients using built in command: poisson num_awards i.prog math Confirm 4 and 5 give the same results
 
 mypois num_awards i.prog math
+eststo mypois
 
 *3 :O
 
 *4
 poisson num_awards i.prog math 
+eststo Stata_Poisson
 
 ****************
 ****************
 ****Problem3****
 ****************
 ****************
+
+
 
 * 3 Part 1
 clear 
@@ -524,5 +613,13 @@ mat rownames F_1="lnemp" "lnemp2"
 mat colnames F_1="Cluster" "Bootstrap"
 
 
-*set trace on 
+*/
 
+
+/*tex
+
+\end{document}
+
+tex*/
+
+texdoc close
