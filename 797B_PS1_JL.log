@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (MiKTeX 20.6.29) (preloaded format=pdflatex 2020.9.28)  28 SEP 2020 16:12
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (MiKTeX 20.6.29) (preloaded format=pdflatex 2020.9.28)  29 SEP 2020 23:24
 entering extended mode
 **./797B_PS1_JL.tex
 (797B_PS1_JL.tex
@@ -201,29 +201,33 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <14.4> on input line 16.
+(Font)              <14.4> on input line 9.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 16.
-(797B_PS1_JL_1.log.tex) (797B_PS1_JL_2.log.tex) (797B_PS1_JL_3.log.tex [1
+(Font)              <7> on input line 9.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 12.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 12.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 12.
+(797B_PS1_JL_1.log.tex) (797B_PS1_JL_2.log.tex [1
 
-{C:/Users/User/AppData/Local/MiKTeX/pdftex/config/pdftex.map}])
-(797B_PS1_JL_4.log.tex)
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 33.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 33.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 33.
- (797B_PS1_JL_5.log.tex)
+{C:/Users/User/AppData/Local/MiKTeX/pdftex/config/pdftex.map}]) (P5_T2.tex
+Overfull \hbox (148.16095pt too wide) in paragraph at lines 3--16
+ [][] 
+ []
+
+) [2] (797B_PS1_JL_3.log.tex) (797B_PS1_JL_4.log.tex) [3]
+(797B_PS1_JL_5.log.tex)
 
 pdfTeX warning: pdflatex.exe (file ./797B_PS1_JL_5.pdf): PDF inclusion: found P
 DF version <1.6>, but at most version <1.5> allowed
-<797B_PS1_JL_5.pdf, id=9, 397.485pt x 289.08pt>
+<797B_PS1_JL_5.pdf, id=19, 397.485pt x 289.08pt>
 File: 797B_PS1_JL_5.pdf Graphic file (type pdf)
 <use 797B_PS1_JL_5.pdf>
-Package pdftex.def Info: 797B_PS1_JL_5.pdf  used on input line 45.
+Package pdftex.def Info: 797B_PS1_JL_5.pdf  used on input line 49.
 (pdftex.def)             Requested size: 397.48402pt x 289.07928pt.
-[2] (P2_MV.tex
+[4] (P2_MV.tex
 ! Undefined control sequence.
 l.4 \toprule
             
@@ -258,7 +262,7 @@ and I'll forget about whatever was undefined.
 ) (Table_P2.tex
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <5> on input line 28.
-) (MS.tex
+) [5 <./797B_PS1_JL_5.pdf>] [6] (MS.tex
 ! Undefined control sequence.
 l.4 \toprule
             
@@ -290,7 +294,32 @@ misspelled it (e.g., `\hobx'), type `I' and the correct
 spelling (e.g., `I\hbox'). Otherwise just continue,
 and I'll forget about whatever was undefined.
 
-) (F_1.tex
+) [7]
+! Missing $ inserted.
+<inserted text> 
+                $
+l.67 ...signs the value one to a scalar called no_
+                                                  treated, zero otherwise. I...
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+l.68 
+     
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+
+Overfull \hbox (664.34708pt too wide) in paragraph at lines 67--68
+\OT1/cmr/m/n/12 called no$[]\OML/cmm/m/it/12 reated; zerootherwise:Itthenrunsar
+egressionwithunitandtimefixedeffectsusingclusteredstandarderrorsattheunitlevel:
+ascalarsig[]takesthevalueofoneifthecoefficientoftreatmentissignificantatthe\OT1
+/cmr/m/n/12 5$ 
+ []
+
+(F_1.tex
 ! Undefined control sequence.
 l.4 \toprule
             
@@ -418,34 +447,120 @@ misspelled it (e.g., `\hobx'), type `I' and the correct
 spelling (e.g., `I\hbox'). Otherwise just continue,
 and I'll forget about whatever was undefined.
 
-) [3 <./797B_PS1_JL_5.pdf>] [4] [5] (797B_PS1_JL.aux) ) 
+) [8] [9]
+*geometry* verbose mode - [ newgeometry ] result:
+* driver: pdftex
+* paper: <default>
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(42.67912pt, 479.47069pt, 92.14519pt)
+* v-part:(T,H,B)=(95.39737pt, 696.72717pt, 2.84544pt)
+* \paperwidth=614.295pt
+* \paperheight=794.96999pt
+* \textwidth=479.47069pt
+* \textheight=696.72717pt
+* \oddsidemargin=-29.59087pt
+* \evensidemargin=-29.59087pt
+* \topmargin=-13.87262pt
+* \headheight=12.0pt
+* \headsep=25.0pt
+* \topskip=12.0pt
+* \footskip=30.0pt
+* \marginparwidth=44.0pt
+* \marginparsep=10.0pt
+* \columnsep=10.0pt
+* \skip\footins=10.8pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+ (P5_T1.tex) [10
+
+] (797B_PS1_JL_6.log.tex [11
+
+])
+
+pdfTeX warning: pdflatex.exe (file ./797B_PS1_JL_7.pdf): PDF inclusion: found P
+DF version <1.6>, but at most version <1.5> allowed
+<797B_PS1_JL_7.pdf, id=61, 397.485pt x 289.08pt>
+File: 797B_PS1_JL_7.pdf Graphic file (type pdf)
+<use 797B_PS1_JL_7.pdf>
+Package pdftex.def Info: 797B_PS1_JL_7.pdf  used on input line 91.
+(pdftex.def)             Requested size: 397.48402pt x 289.07928pt.
+[12 <./797B_PS1_JL_7.pdf>]
+*geometry* verbose mode - [ newgeometry ] result:
+* driver: pdftex
+* paper: <default>
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(42.67912pt, 479.47069pt, 92.14519pt)
+* v-part:(T,H,B)=(95.39737pt, 696.72717pt, 2.84544pt)
+* \paperwidth=614.295pt
+* \paperheight=794.96999pt
+* \textwidth=479.47069pt
+* \textheight=696.72717pt
+* \oddsidemargin=-29.59087pt
+* \evensidemargin=-29.59087pt
+* \topmargin=-13.87262pt
+* \headheight=12.0pt
+* \headsep=25.0pt
+* \topskip=12.0pt
+* \footskip=30.0pt
+* \marginparwidth=44.0pt
+* \marginparsep=10.0pt
+* \columnsep=10.0pt
+* \skip\footins=10.8pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+ (P5_T2.tex
+Overfull \hbox (98.69489pt too wide) in paragraph at lines 3--16
+ [][] 
+ []
+
+) [13
+
+] (797B_PS1_JL.aux) ) 
 Here is how much of TeX's memory you used:
- 2193 strings out of 480790
- 31224 string characters out of 2897770
- 279055 words of memory out of 3000000
- 18176 multiletter control sequences out of 15000+200000
+ 2214 strings out of 480790
+ 31745 string characters out of 2897770
+ 289055 words of memory out of 3000000
+ 18185 multiletter control sequences out of 15000+200000
  538374 words of font info for 43 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 30i,10n,25p,211b,384s stack positions out of 5000i,500n,10000p,200000b,50000s
-<C:/Users/User/AppData/L
-ocal/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/User/A
-ppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmex10.pfb><C:/User
-s/User/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb>
-<C:/Users/User/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmm
-i12.pfb><C:/Users/User/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfont
-s/cm/cmmi8.pfb><C:/Users/User/AppData/Local/Programs/MiKTeX/fonts/type1/public/
-amsfonts/cm/cmr10.pfb><C:/Users/User/AppData/Local/Programs/MiKTeX/fonts/type1/
-public/amsfonts/cm/cmr12.pfb><C:/Users/User/AppData/Local/Programs/MiKTeX/fonts
-/type1/public/amsfonts/cm/cmr17.pfb><C:/Users/User/AppData/Local/Programs/MiKTe
-X/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Users/User/AppData/Local/Programs
-/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/User/AppData/Local/
-Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy6.pfb><C:/Users/User/AppData
-/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/Users/User/
-AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy8.pfb><C:/User
-s/User/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt8.pfb>
-Output written on 797B_PS1_JL.pdf (5 pages, 201206 bytes).
+ 30i,11n,25p,898b,382s stack positions out of 5000i,500n,10000p,200000b,50000s
+<C:/Users/User/AppData/Local/Programs/MiKTeX/fonts/type1/p
+ublic/amsfonts/cm/cmbx12.pfb><C:/Users/User/AppData/Local/Programs/MiKTeX/fonts
+/type1/public/amsfonts/cm/cmex10.pfb><C:/Users/User/AppData/Local/Programs/MiKT
+eX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/User/AppData/Local/Progr
+ams/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi12.pfb><C:/Users/User/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/User/AppD
+ata/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/Us
+er/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/U
+sers/User/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr17.pf
+b><C:/Users/User/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/c
+mr8.pfb><C:/Users/User/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfont
+s/cm/cmsy10.pfb><C:/Users/User/AppData/Local/Programs/MiKTeX/fonts/type1/public
+/amsfonts/cm/cmsy6.pfb><C:/Users/User/AppData/Local/Programs/MiKTeX/fonts/type1
+/public/amsfonts/cm/cmsy7.pfb><C:/Users/User/AppData/Local/Programs/MiKTeX/font
+s/type1/public/amsfonts/cm/cmsy8.pfb><C:/Users/User/AppData/Local/Programs/MiKT
+eX/fonts/type1/public/amsfonts/cm/cmtt8.pfb>
+Output written on 797B_PS1_JL.pdf (13 pages, 290314 bytes).
 PDF statistics:
- 85 PDF objects out of 1000 (max. 8388607)
+ 123 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 6 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 11 words of extra memory for PDF output out of 10000 (max. 10000000)
 

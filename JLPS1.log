@@ -1,0 +1,7019 @@
+-------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\User\Documents\GitHub\797b-proble
+> m-sets\JLPS1.log
+  log type:  text
+ opened on:  29 Sep 2020, 22:15:09
+
+. texdoc do "C:\Users\User\Documents\GitHub\797b-proble
+> m-sets\JL_PS_1.do", replace
+
+. *DO-FILE PS 1
+. 
+. * Jesús Lara Jáuregui
+. 
+. *log using "C:\Users\User\Documents\GitHub\797b-probl
+> em-sets\JLPS1.log",replace         
+. 
+. clear
+
+. global home "C:\Users\User\Documents\GitHub\797b-prob
+> lem-sets"
+
+. cd "$home" 
+C:\Users\User\Documents\GitHub\797b-problem-sets
+
+. set more off
+
+. 
+. texdoc init 797B_PS1_JL, replace
+(texdoc output file is 797B_PS1_JL.tex)
+
+. 
+. 
+. texdoc append_snippet 2
+
+. 
+. 
+. 
+. 
+. 
+. 
+.                 *********************
+.                 ***** PROBLEM 1 *****
+.                 *********************
+. 
+. texdoc append_snippet 3
+
+. 
+. 
+. /*Part 1*****. Write an e-class program “myreg1” whic
+> h takes in a varlist and performs an OLS regression o
+> f y on X
+> on as follows*/
+. 
+. 
+. 
+. 
+. 
+. use census_sample_30_50, clear 
+
+. 
+. label variable lnwage "Wage (log)"
+
+. label variable exp Experience
+
+. label variable exp2 Experience2
+
+. //(a)
+. 
+. 
+. * My program
+. cap program drop myreg1
+
+. program myreg1, eclass
+  1. syntax varlist 
+  2. tokenize `varlist'
+  3. * (a) define locals "y" and "X" using macro shift
+.   local y "`1'"    
+  4.   macro shift 1
+  5.   local X "`*'"
+  6.   
+. *using MATA to define y and X matrices
+.    
+. * b) open MATA, and using “st_view”, define the y and
+>  X matrices within MATA
+. 
+.    mata: M=y=X=V=.
+  7.    mata:st_view(M, .,("`y'" , "`X'"), 0) 
+  8.    mata:st_subview(y,M,.,1)
+  9.    mata:st_subview(X,M,.,(2\.)) 
+ 10.    mata:n=rows(X)
+ 11.    mata:k=cols(X)
+ 12.    mata: c=J(rows(X),1,1)
+ 13.    
+. 
+. 
+.    // c) calculating the coefficent vector (beta hat)
+>  using matrix operations
+. 
+.    mata:XX = cross(X,1  ,  X,1)
+ 14.    mata:Xy = cross(X,1  , y,0)
+ 15.    mata:b=invsym(XX)*Xy
+ 16. 
+.  // (d) calculate OLS variance estimate of β under ho
+> moscedasticity :  V (β) = 1
+. 
+.    mata: e=y-(X,c)*b
+ 17.    
+.    mata: s2=cross(e,e)/(n-k) 
+ 18.    mata: V=s2*invsym(XX)
+ 19. 
+.    // (e) pass the vector βˆ and matrix ˆ V (β) back 
+> to Stata
+.    
+.    mata: st_matrix("V",V)
+ 20.    mata:st_matrix( "b" , b) 
+ 21.  // show the b matrix
+. //(f) post vector βˆ and matrix ˆ V (β) uisng ereturn
+>  post in the e(b) and e(V) matrices
+. 
+.    matrix list b
+ 22.    matrix list V
+ 23.    
+.   
+. end
+
+. 
+. // (g) confirm your answers are correct by checking a
+> nswer vis a vis the command: regress y x1 x2 x3
+. 
+. texdoc append_snippet 4
+
+. 
+. 
+. tex\ Results with myreg1
+
+. 
+. texdoc stlog
+(opening texdoc stlog 797B_PS1_JL_1)
+
+. myreg1 lnwage hieduc exp exp2 
+
+b[4,1]
+            c1
+r1   .08264541
+r2   .02523881
+r3  -.00037668
+r4   1.3094414
+
+symmetric V[4,4]
+            c1          c2          c3          c4
+r1   1.195e-06
+r2   1.595e-07   .00001683
+r3  -4.035e-09  -3.770e-07   8.579e-09
+r4  -.00001749  -.00017676   3.899e-06   .00211062
+
+. texdoc stlog close
+(log-file written to 797B_PS1_JL_1.log.tex)
+
+. 
+. tex\ Results with Stata OlS command
+
+. 
+. texdoc stlog
+(opening texdoc stlog 797B_PS1_JL_2)
+
+. quiet reg lnwage hieduc exp exp2
+
+. matrix list e(b)
+
+e(b)[1,4]
+        hieduc         exp        exp2       _cons
+y1   .08264541   .02523881  -.00037668   1.3094414
+
+. matrix list e(V)
+
+symmetric e(V)[4,4]
+            hieduc         exp        exp2       _cons
+hieduc   1.195e-06
+   exp   1.595e-07   .00001683
+  exp2  -4.035e-09  -3.770e-07   8.580e-09
+ _cons   -.0000175  -.00017676   3.899e-06   .00211066
+
+. texdoc stlog close
+(log-file written to 797B_PS1_JL_2.log.tex)
+
+. 
+. tex \input{P5_T2.tex}
+
+. 
+. 
+. 
+. 
+. 
+. 
+. *****PART 2
+. 
+. texdoc append_snippet 5
+
+. 
+. tex \pagebreak
+
+. 
+. cap program drop myreg2
+
+. program myreg2, eclass
+  1. syntax varlist [if] [in]
+  2. tokenize `varlist'
+  3. 
+. // a) define locals “y” and “X” using macro shift
+. 
+.   local y "`1'"
+  4.   macro shift 1
+  5.   local X "`*'"
+  6.   
+. //(b) open MATA, and using “st_view”, define the y an
+> d X matrices within MATA
+.    
+.    mata: M=y=X=V=.
+  7.    mata:st_view(M, .,("`y'" , "`X'"), 0)
+  8.    mata:st_subview(y,M,.,1)
+  9.    mata:st_subview(X,M,.,2\.)
+ 10.    mata: c=J(rows(X),1,1)
+ 11.    mata: X=(X,c)
+ 12. 
+.    mata: myols(y, X)
+ 13. 
+.    //f) post vector βˆ and matrix ˆ V (β) uisng eretu
+> rn post in the e(b) and e(V) matrices
+.    
+.  ereturn post `b'
+ 14.    matrix list b
+ 15.    matrix list V
+ 16. end
+
+. 
+. // (c) calculate OLS coefficient vector βˆ 
+. 
+. cap mata mata drop myols()
+
+. mata:
+------------------------------------------------- mata 
+> (type end to exit) ----------------------------------
+: 
+: void myols(matrix y, matrix X){
+> 
+> b=SXX=SXy=G=.
+> // (d) calculate OLS variance estimate of βˆ under ar
+> bitrary heteroscedasticity
+> // X[i,.] Dimension 1x(k+1) 
+> // X[i,.]' Dimension (k+1)x1 
+> for(i=1; i<=rows(X); i++){
+>                         if(i==1){
+>                                 SXX= X[i,.]'*X[i,.] /
+> / Dimension (k+1)x(k+1)
+>                                 SXy= X[i,.]'*y[i,1] /
+> / Dimension (k+1)x1
+>                         }
+> else {
+>                                 SXX=SXX + (X[i,.]')*X
+> [i,.] // Dimension (k+1)x(k+1)
+>                                 SXy=SXy + (X[i,.]')*y
+> [i,1] // Dimension (k+1)x1
+>                         }
+>                 }
+> b=invsym(SXX)*(SXy)  // Dimension (k+1)x1       
+> e=y-X*b
+> //Dimension nx1
+>                 
+> for(i=1; i<=rows(X); i++){
+>                         if(i==1){
+>                                 G=(e[i,1]*e[i,1])*(X[
+> i,.]')*X[i,.] // Dimension (k+1)x(k+1)
+>                         }
+> else {
+>                                 G=G+(e[i,1]*e[i,1])*(
+> X[i,.]')*X[i,.] //
+>                                 
+>                         }
+>                 }
+>                 
+>                  
+>                  
+>                 r=(rows(X)/(rows(X)-rows(b))) // Dim 
+> (1x1)
+>             V=invsym(SXX)*(r*G)*invsym(SXX) // 
+>                 
+> //(e) pass the vector βˆ and matrix ˆ V (β) back to S
+> tata
+> st_matrix("b", b)
+> st_matrix("V",V)
+> }
+
+: end
+-------------------------------------------------------
+
+. 
+. // (g) confirm your answers are correct by checking a
+> nswer vis a vis the command: regress y x1 x2 x3, robu
+> st
+. 
+. texdoc append_snippet 6
+
+. 
+. texdoc stlog
+(opening texdoc stlog 797B_PS1_JL_3)
+
+. 
+. myreg2 lnwage hieduc exp exp2 
+
+b[4,1]
+            c1
+r1   .08264541
+r2   .02523881
+r3  -.00037668
+r4   1.3094414
+
+symmetric V[4,4]
+            c1          c2          c3          c4
+r1   1.520e-06
+r2   1.712e-07   .00001632
+r3  -4.045e-09  -3.685e-07   8.451e-09
+r4  -.00002216  -.00016979   3.771e-06   .00208194
+
+. quiet reg lnwage hieduc exp exp2, robust
+
+. 
+. texdoc stlog close
+(log-file written to 797B_PS1_JL_3.log.tex)
+
+. 
+. tex \ Results with Stata's OLS and robust standard er
+> rors
+
+. 
+. texdoc stlog
+(opening texdoc stlog 797B_PS1_JL_4)
+
+. 
+. matrix list e(b)
+
+e(b)[1,4]
+        hieduc         exp        exp2       _cons
+y1   .08264541   .02523881  -.00037668   1.3094414
+
+. matrix list e(V)
+
+symmetric e(V)[4,4]
+            hieduc         exp        exp2       _cons
+hieduc   1.520e-06
+   exp   1.712e-07   .00001632
+  exp2  -4.045e-09  -3.685e-07   8.451e-09
+ _cons  -.00002216  -.00016979   3.771e-06   .00208194
+
+. 
+. texdoc stlog close
+(log-file written to 797B_PS1_JL_4.log.tex)
+
+. 
+. 
+. *****************
+. *** PROBLEM 2 ***
+. *****************
+. 
+. tex \pagebreak
+
+. 
+. 
+. texdoc append_snippet 7
+
+. 
+. 
+. *1Program an .ado file called “mypois.ado” that estim
+> ates poisson regression using maximum likelihood
+. 
+. 
+.  
+. texdoc append_snippet 8
+
+.  
+. *2. Using data from http://www.ats.ucla.edu/stat/stat
+> a/dae/poisson_sim , do the following:
+. use https://stats.idre.ucla.edu/stat/stata/dae/poisso
+> n_sim, clear
+(highschool and beyond (200 cases))
+
+. 
+. *3. Show a histogram of the outcome (num_awards), and
+>  report the mean and variance. 
+. 
+. texdoc stlog 
+(opening texdoc stlog 797B_PS1_JL_5)
+
+. hist(num_awards), title("Number of Awards") color("or
+> ange")
+(bin=14, start=0, width=.42857143)
+
+. texdoc stlog close 
+(log-file written to 797B_PS1_JL_5.log.tex)
+
+. texdoc graph
+(graph written to 797B_PS1_JL_5.pdf)
+
+. 
+. quiet summarize(num_awards)
+
+. 
+. sca mean=r(mean)
+
+. sca variance= r(Var)
+
+. 
+. mat P2_MV=(mean,variance)
+
+. mat colnames P2_MV="Mean" "Variance"
+
+. mat rownames P2_MV="Number of awards"
+
+. 
+. esttab m(P2_MV,fmt(%9.2f)) using P2_MV.tex, replace t
+> itle(Number of Awards) nomtitles booktabs
+(output written to P2_MV.tex)
+
+. 
+. texdoc append_snippet 9
+
+. 
+. 
+. tex \input{P2_MV.tex}
+
+. *5. Estimate coefficients using built in command: poi
+> sson num_awards i.prog math Confirm 4 and 5 give the 
+> same results
+. 
+. mypois num_awards i.prog math
+
+initial:       log likelihood = -247.64709
+alternative:   log likelihood = -231.95322
+rescale:       log likelihood = -231.95322
+Iteration 0:   log likelihood = -231.95322  
+Iteration 1:   log likelihood = -196.62922  
+Iteration 2:   log likelihood = -182.89925  
+Iteration 3:   log likelihood = -182.75248  
+Iteration 4:   log likelihood = -182.75225  
+Iteration 5:   log likelihood = -182.75225  
+
+                                                Number 
+> of obs                                               
+>            =        200
+                                                Wald ch
+> i2(3)                                                
+>            =      83.20
+Log likelihood = -182.75225                     Prob > 
+> chi2                                                 
+>            =     0.0000
+
+-------------------------------------------------------
+> -----------------------
+  num_awards |      Coef.   Std. Err.      z    P>|z|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+        prog |
+   academic  |   1.083859    .358253     3.03   0.002  
+>     .381696                                          
+>                1.786022
+   vocation  |   .3698091   .4410704     0.84   0.402  
+>    -.494673                                          
+>                1.234291
+             |
+        math |   .0701524   .0105992     6.62   0.000  
+>    .0493783                                          
+>                .0909265
+       _cons |  -5.247125   .6584536    -7.97   0.000  
+>    -6.53767                                          
+>               -3.956579
+-------------------------------------------------------
+> -----------------------
+
+. estimates store mypois
+
+. 
+. *3 
+. 
+. *4
+. poisson num_awards i.prog math 
+
+Iteration 0:   log likelihood = -182.75759  
+Iteration 1:   log likelihood = -182.75225  
+Iteration 2:   log likelihood = -182.75225  
+
+Poisson regression                              Number 
+> of obs                                               
+>            =        200
+                                                LR chi2
+> (3)                                                  
+>            =      98.22
+                                                Prob > 
+> chi2                                                 
+>            =     0.0000
+Log likelihood = -182.75225                     Pseudo 
+> R2                                                   
+>            =     0.2118
+
+-------------------------------------------------------
+> -----------------------
+  num_awards |      Coef.   Std. Err.      z    P>|z|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+        prog |
+   academic  |   1.083859    .358253     3.03   0.002  
+>    .3816962                                          
+>                1.786022
+   vocation  |   .3698092   .4410703     0.84   0.402  
+>   -.4946727                                          
+>                1.234291
+             |
+        math |   .0701524   .0105992     6.62   0.000  
+>    .0493783                                          
+>                .0909265
+       _cons |  -5.247124   .6584531    -7.97   0.000  
+>   -6.537669                                          
+>                -3.95658
+-------------------------------------------------------
+> -----------------------
+
+. estimates store Stata_Poisson
+
+. 
+. esttab Stata_Poisson mypois using Table_P2.tex, b(%7.
+> 4f) se(%7.4f) label replace compress mtitle("Stata Po
+> isson" "mypois") title(Poisson Estimation)
+(output written to Table_P2.tex)
+
+. 
+. tex \input{Table_P2.tex}
+
+. 
+. 
+. ****************
+. ****************
+. ****Problem3****
+. ****************
+. ****************
+. 
+. tex \pagebreak
+
+. 
+. texdoc append_snippet 10
+
+. 
+. texdoc append_snippet 11
+
+. * 3 Part 1
+. clear 
+
+. eststo clear
+
+. 
+. 
+. 
+. cap program drop OLSPOIS
+
+. program OLSPOIS, eclass 
+  1. args N sigma
+  2. 
+. 
+. matrix Sigma=(`sigma', `sigma'/2 \ `sigma'/2, `sigma'
+> )
+  3. 
+. drawnorm X1 X2, n(`N') cov(`Sigma')
+  4. 
+. gen y=rpoisson(exp(2*X1-X2))
+  5. gen ly=ln(y)
+  6. 
+. 
+. quiet regress ly X1 X2
+  7. 
+. sca MSE_OLS= 0.5*((_b[X1]-2)^2 + (_b[X2]-(-1))^2)
+  8. 
+. quiet poisson y X1 X2 
+  9. 
+. sca MSE_POIS= 0.5*((_b[X1]-2)^2 + (_b[X2]-(-1))^2)
+ 10. 
+. sca list MSE_OLS MSE_POIS
+ 11. 
+. drop X1 X2 y ly 
+ 12. end
+
+. 
+. 
+. *******Running the program
+. 
+. 
+. set seed 5555 
+
+. quiet{
+
+. 
+. 
+. *1-3 N=50 (.01, .1 1)
+. *4_6 N=1000 (.01, .1 1)
+.   
+. 
+. *** Getting matrix of averages averages
+. forvalues i=1/6{
+  2. mata: sim_`i'=st_matrix("sim_`i'")
+  3. mata: MOLS_`i'=mean(sim_`i'[.,1])
+  4. mata: MPOIS_`i'=mean(sim_`i'[.,2])
+  5. }
+
+. 
+. *rows N(50,1000) *columns(0.01,0.1,1)
+. 
+. mata: MS=(MOLS_1,MPOIS_1,MOLS_2,MPOIS_2,MOLS_3,MPOIS_
+> 3 \ MOLS_4,MPOIS_4,MOLS_5,MPOIS_5,MOLS_6,MPOIS_6)
+
+. 
+. mata: st_matrix("MS",MS)
+
+. 
+. matrix rownames MS= "N=50" "N=1000"
+
+. matrix colnames MS= "0.01 OLS" "0.01 POIS" "0.1 OLS" 
+> "0.1 POIS" "1 OLS" "1 POIS"
+
+. 
+. esttab m(MS) using MS.tex, replace title(Average of t
+> he squared error (MSE): OLS and Poisson) nomtitles bo
+> oktabs
+(output written to MS.tex)
+
+. 
+. texdoc append_snippet 12
+
+. 
+. tex \input{MS.tex}
+
+. 
+. 
+. tex \pagebreak
+
+. 
+. ****************
+. ****************
+. *** PROBLEM 4***
+. ****************
+. ****************
+. 
+. texdoc append_snippet 13
+
+. 
+. **** Making the program 
+. 
+. 
+. 
+. cap program drop randsim
+
+. program randsim, rclass
+  1. syntax varlist(numeric fv) 
+  2. tokenize `varlist'
+  3.   local y "`1'"
+  4.   
+.   local unit "`2'"
+  5.  
+.   local t "`3'"
+  6. 
+. 
+. *randomization 
+. quiet{
+  7. egen `unit'_id= group(`unit')
+  8. gen random=.
+  9. 
+. 
+. forvalues i=1/25 {
+ 10. sca r_`i'=runiform(0,1)
+ 11. replace random = r_`i' if `unit'_id==`i'
+ 12. }
+ 13. gen treatment=0
+ 14. replace treatment=1 if random<=0.25
+ 15. }
+ 16. *Generate placebo 
+. 
+. gen `y'2= `y'+0.05*treatment
+ 17. 
+. ***Run regressions
+. 
+. foreach var of varlist `y' `y'2{
+ 18. 
+. quiet su treatment
+ 19. if r(mean)>0 {
+ 20. 
+. sca no_treated=0
+ 21.  
+. quiet reg `var' treatment i.`unit' i.`t', vce(cluster
+>  `unit') 
+ 22. quiet boottest treatment, nogr
+ 23. local pvalue_`var'= 2*ttail(e(df_r),abs(_b[treatme
+> nt]/_se[treatment]))
+ 24. local bpvalue_`var'=r(p)
+ 25. 
+. if `pvalue_`var''<0.05 {
+ 26.    sca sig_`var'=1
+ 27. }
+ 28. else{
+ 29.    sca sig_`var'=0
+ 30. }
+ 31. 
+. if `bpvalue_`var''<0.05 {
+ 32.         sca bsig_`var'=1
+ 33. }
+ 34. else{
+ 35.  
+. sca bsig_`var'=0
+ 36. }
+ 37. 
+. sca list sig_`var' bsig_`var'
+ 38. }
+ 39. 
+. else {
+ 40. 
+. sca no_treated=1
+ 41. sca sig_`var'=0
+ 42. sca bsig_`var'=0
+ 43. }
+ 44. }
+ 45. drop `unit'_id `y'2 random treatment
+ 46. 
+. end 
+
+. 
+. 
+. 
+. 
+. *4.1
+. use 25_MSA_panel, clear
+
+. keep if naics==10
+(2,025 observations deleted)
+
+. xtset cbsa time 
+       panel variable:  cbsa (strongly balanced)
+        time variable:  time, 1 to 81
+                delta:  1 unit
+
+. 
+. 
+. 
+. *** (b) Run the loop
+. 
+. * remember to put 1000 sims
+. set seed 5555 
+
+. quiet{
+cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsac
+> bsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacb
+> sacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbs
+> acbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+> cbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsacbsa
+. 
+. mata: S=st_matrix("S")
+
+. mata: s_1r=sum(S[.,1])
+
+. mata: s_1b=sum(S[.,2])
+
+. mata: s_2r=sum(S[.,3])
+
+. mata: s_2b=sum(S[.,4])
+
+. mata: s_nt=sum(S[.,5])
+
+. 
+. *rows: lnemp and lnemp2
+. *columns: cluster vs bootstrap
+. mata: F_1=(s_1r,s_1b\s_2r,s_2b)
+
+. mata: F_1 
+          1      2
+    +---------------+
+  1 |  1000     52  |
+  2 |  1000    143  |
+    +---------------+
+
+. 
+. mata: F_0=J(2,2,rows(S))-(F_1+J(2,2,s_nt))
+
+. mata: F_0
+         1     2
+    +-------------+
+  1 |    0   948  |
+  2 |    0   857  |
+    +-------------+
+
+. 
+. 
+. mata:st_matrix("F_1",F_1)
+
+. mata:st_matrix("F_0",F_0)
+
+. 
+. mat rownames F_1="lnemp" "lnemp2"
+
+. mat colnames F_1="Cluster" "Bootstrap"
+
+. 
+. mat rownames F_0="lnemp" "lnemp2"
+
+. mat colnames F_0="Cluster" "Bootstrap"
+
+. 
+. esttab m(F_1) using F_1.tex, replace title(Coefficien
+> t of treatment significant? Frecuency) nomtitles book
+> tabs
+(output written to F_1.tex)
+
+. 
+. esttab m(F_0) using F_0.tex, replace title(Coefficien
+> t of treatment insignificant? Frecuency) nomtitles bo
+> oktabs
+(output written to F_0.tex)
+
+. 
+. texdoc append_snippet 14
+
+. 
+. 
+. tex \input{F_1.tex}
+
+. tex \input{F_0.tex}
+
+. *Rows: lnemp lnemp2
+. *Columns: robust vs bootstrap
+.  
+. 
+. *(c) just keep a few cbsa
+. /*New York, Los Angeles, Boston, Dallas, Miami, Chica
+> go, Pittsburgh, Philadelphia*/
+. use 25_MSA_panel, clear
+
+. keep if naics==10
+(2,025 observations deleted)
+
+. keep if cbsa== 35620 | cbsa== 31100 | cbsa== 14460 | 
+> cbsa== 19100 | cbsa== 33100 | cbsa==16980 | cbsa==383
+> 00 | cbsa==37980
+(1,377 observations deleted)
+
+. 
+. ***repeat
+. forvalues i=1/1000{
+  2. di `i'
+  3. randsim lnemp cbsa time 
+  4. 
+. sca sig_lnemp_`i'= sig_lnemp
+  5. sca bsig_lnemp_`i'= bsig_lnemp
+  6. sca sig_lnemp2_`i'= sig_lnemp2
+  7. sca bsig_lnemp2_`i'= bsig_lnemp2
+  8. sca no_treated_`i'=no_treated
+  9. 
+. if `i'== 1 {
+ 10. matrix S=(sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp2_
+> `i',bsig_lnemp2_`i',no_treated_`i')
+ 11. } 
+ 12. else {
+ 13. 
+. matrix S= S \ [sig_lnemp_`i',bsig_lnemp_`i',sig_lnemp
+> 2_`i', bsig_lnemp2_`i',no_treated_`i']
+ 14. }
+ 15. 
+. }
+1
+2
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+3
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+4
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+5
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+6
+7
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+8
+9
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+10
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+11
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+12
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+13
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+14
+15
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+16
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+17
+18
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+19
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+20
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+21
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+22
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+23
+24
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+25
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+26
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+27
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+28
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+29
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+30
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+31
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+32
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+33
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+34
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+35
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+36
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+37
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+38
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+39
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+40
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+41
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+42
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+43
+44
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+45
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+46
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+47
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+48
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+49
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+50
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+51
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+52
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+53
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+54
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+55
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+56
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+57
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+58
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+59
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+60
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+61
+62
+63
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+64
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+65
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+66
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+67
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+68
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+69
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+70
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+71
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+72
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+73
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+74
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+75
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+76
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+77
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+78
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+79
+80
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+81
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+82
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+83
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+84
+85
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+86
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+87
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+88
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+89
+90
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+91
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+92
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+93
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+94
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+95
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+96
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+97
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+98
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+99
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+100
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+101
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+102
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+103
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+104
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+105
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+106
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+107
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+108
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+109
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+110
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+111
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+112
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+113
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+114
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+115
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+116
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+117
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+118
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+119
+120
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+121
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+122
+123
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+124
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+125
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+126
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+127
+128
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+129
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+130
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+131
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+132
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+133
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+134
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+135
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+136
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+137
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+138
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+139
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+140
+141
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+142
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+143
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+144
+145
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+146
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+147
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+148
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+149
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+150
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+151
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+152
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+153
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+154
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+155
+156
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+157
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+158
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+159
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+160
+161
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+162
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+163
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+164
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+165
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+166
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+167
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+168
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+169
+170
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+171
+172
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+173
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+174
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+175
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+176
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+177
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+178
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+179
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+180
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+181
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+182
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+183
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+184
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+185
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+186
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+187
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+188
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+189
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+190
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+191
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+192
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+193
+194
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+195
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+196
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+197
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+198
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+199
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+200
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+201
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+202
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+203
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+204
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+205
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+206
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+207
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+208
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+209
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+210
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+211
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+212
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+213
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+214
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+215
+216
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+217
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+218
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+219
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+220
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+221
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+222
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+223
+224
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+225
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+226
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+227
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+228
+229
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+230
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+231
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+232
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+233
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+234
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+235
+236
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+237
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+238
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+239
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+240
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+241
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+242
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+243
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+244
+245
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+246
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+247
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+248
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+249
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+250
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+251
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+252
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+253
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+254
+255
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+256
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+257
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+258
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+259
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+260
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+261
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+262
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+263
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+264
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+265
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+266
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+267
+268
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+269
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+270
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+271
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+272
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+273
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+274
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+275
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+276
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+277
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+278
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+279
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+280
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+281
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+282
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+283
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+284
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+285
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+286
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+287
+288
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+289
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+290
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+291
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+292
+293
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+294
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+295
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+296
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+297
+298
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+299
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+300
+301
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+302
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+303
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+304
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+305
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+306
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+307
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+308
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+309
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+310
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+311
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+312
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+313
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+314
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+315
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+316
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+317
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+318
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+319
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+320
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+321
+322
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+323
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+324
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+325
+326
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+327
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+328
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+329
+330
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+331
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+332
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+333
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+334
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+335
+336
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+337
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+338
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+339
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+340
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+341
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+342
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+343
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+344
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+345
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+346
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+347
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+348
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+349
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+350
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+351
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+352
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+353
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+354
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+355
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+356
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+357
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+358
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+359
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+360
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+361
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+362
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+363
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+364
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+365
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+366
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+367
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+368
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+369
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+370
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+371
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+372
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+373
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+374
+375
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+376
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+377
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+378
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+379
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+380
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+381
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+382
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+383
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+384
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+385
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+386
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+387
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+388
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+389
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+390
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+391
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+392
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+393
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+394
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+395
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+396
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+397
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+398
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+399
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+400
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+401
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+402
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+403
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+404
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+405
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+406
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+407
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+408
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+409
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+410
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+411
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+412
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+413
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+414
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+415
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+416
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+417
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+418
+419
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+420
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+421
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+422
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+423
+424
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+425
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+426
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+427
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+428
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+429
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+430
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+431
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+432
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+433
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+434
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+435
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+436
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+437
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+438
+439
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+440
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+441
+442
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+443
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+444
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+445
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+446
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+447
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+448
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+449
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+450
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+451
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+452
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+453
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+454
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+455
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+456
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+457
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+458
+459
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+460
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+461
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+462
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+463
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+464
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+465
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+466
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+467
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+468
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+469
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+470
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+471
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+472
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+473
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+474
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+475
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+476
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+477
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+478
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+479
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+480
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+481
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+482
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+483
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+484
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+485
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+486
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+487
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+488
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+489
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+490
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+491
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+492
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+493
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+494
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+495
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+496
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+497
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+498
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+499
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+500
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+501
+502
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+503
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+504
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+505
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+506
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+507
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+508
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+509
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+510
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+511
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+512
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+513
+514
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+515
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+516
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+517
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+518
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+519
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+520
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+521
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+522
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+523
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+524
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+525
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+526
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+527
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+528
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+529
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+530
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+531
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+532
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+533
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+534
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+535
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+536
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+537
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+538
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+539
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+540
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+541
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+542
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+543
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+544
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+545
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+546
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+547
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+548
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+549
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+550
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+551
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+552
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+553
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+554
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+555
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+556
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+557
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+558
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+559
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+560
+561
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+562
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+563
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+564
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+565
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+566
+567
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+568
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+569
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+570
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+571
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+572
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+573
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+574
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+575
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+576
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+577
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+578
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+579
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+580
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+581
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+582
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+583
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+584
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+585
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+586
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+587
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+588
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+589
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+590
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+591
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+592
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+593
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+594
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+595
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+596
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+597
+598
+599
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+600
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+601
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+602
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+603
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+604
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+605
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+606
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+607
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+608
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+609
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+610
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+611
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+612
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+613
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+614
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+615
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+616
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+617
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+618
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+619
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+620
+621
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+622
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+623
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+624
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+625
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+626
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+627
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+628
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+629
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+630
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+631
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+632
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+633
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+634
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+635
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+636
+637
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+638
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+639
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+640
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+641
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+642
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+643
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+644
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+645
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+646
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+647
+648
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+649
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+650
+651
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+652
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+653
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+654
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+655
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+656
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+657
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+658
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+659
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+660
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+661
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+662
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+663
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+664
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+665
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+666
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+667
+668
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+669
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+670
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+671
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+672
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+673
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+674
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+675
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+676
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+677
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+678
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+679
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+680
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+681
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+682
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+683
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+684
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+685
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+686
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+687
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+688
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+689
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+690
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+691
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+692
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+693
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+694
+695
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+696
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+697
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+698
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+699
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+700
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+701
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+702
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+703
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+704
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+705
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+706
+707
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+708
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+709
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+710
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+711
+712
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+713
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+714
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+715
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+716
+717
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+718
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+719
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+720
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+721
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+722
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+723
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+724
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+725
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+726
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+727
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+728
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+729
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+730
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+731
+732
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+733
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+734
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+735
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+736
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+737
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+738
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+739
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+740
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+741
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+742
+743
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+744
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+745
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+746
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+747
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+748
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+749
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+750
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+751
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+752
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+753
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+754
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+755
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+756
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+757
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+758
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+759
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+760
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+761
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+762
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+763
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+764
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+765
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+766
+767
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+768
+769
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+770
+771
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+772
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+773
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+774
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+775
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+776
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+777
+778
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+779
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+780
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+781
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+782
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+783
+784
+785
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+786
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+787
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+788
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+789
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+790
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+791
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+792
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+793
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+794
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+795
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+796
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+797
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+798
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+799
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+800
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+801
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+802
+803
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+804
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+805
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+806
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+807
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+808
+809
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+810
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+811
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+812
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+813
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+814
+815
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+816
+817
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+818
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+819
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+820
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+821
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+822
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+823
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+824
+825
+826
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+827
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+828
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+829
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+830
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+831
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+832
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+833
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+834
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+835
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+836
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+837
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+838
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+839
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+840
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+841
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+842
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+843
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+844
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+845
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+846
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+847
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+848
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+849
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+850
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+851
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+852
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+853
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+854
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+855
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+856
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+857
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+858
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+859
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+860
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+861
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+862
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+863
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+864
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+865
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+866
+867
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+868
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+869
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+870
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+871
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+872
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+873
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+874
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+875
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+876
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+877
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+878
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+879
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+880
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+881
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+882
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+883
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+884
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+885
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+886
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+887
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+888
+889
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+890
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+891
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+892
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+893
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+894
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+895
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+896
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+897
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+898
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+899
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+900
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+901
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+902
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+903
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+904
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+905
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+906
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+907
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+908
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+909
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+910
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+911
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+912
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+913
+914
+915
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+916
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+917
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+918
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+919
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+920
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+921
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+922
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+923
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+924
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+925
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+926
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+927
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+928
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+929
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+930
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+931
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+932
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+933
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+934
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+935
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+936
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+937
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+938
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+939
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+940
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+941
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+942
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+943
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+944
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+945
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+946
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+947
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+948
+949
+950
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+951
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+952
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+953
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+954
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+955
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+956
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+957
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+958
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+959
+960
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+961
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+962
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+963
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+964
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+965
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+966
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+967
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+968
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+969
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+970
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+971
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+972
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+973
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+974
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+975
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+976
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+977
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+978
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+979
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+980
+981
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+982
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+983
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+984
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+985
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+986
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+987
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+988
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+989
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+990
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+991
+992
+993
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+994
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+995
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+996
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+997
+cbsa sig_lnemp =          1
+bsig_lnemp =          1
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+998
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+999
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+1000
+cbsa sig_lnemp =          1
+bsig_lnemp =          0
+cbsasig_lnemp2 =          1
+bsig_lnemp2 =          0
+
+. 
+. 
+. mata: S=st_matrix("S")
+
+. mata: s_1r=sum(S[.,1])
+
+. mata: s_1b=sum(S[.,2])
+
+. mata: s_2r=sum(S[.,3])
+
+. mata: s_2b=sum(S[.,4])
+
+. mata: s_nt=sum(S[.,5])
+
+. 
+. *rows: lnemp and lnemp2
+. *columns: cluster vs bootstrap
+. mata: F_1s=(s_1r,s_1b\s_2r,s_2b)
+
+. 
+. mata: F_0s=J(2,2,rows(S))-(F_1s+J(2,2,s_nt))
+
+. 
+. mata:st_matrix("F_1s",F_1s)
+
+. mata:st_matrix("F_0s",F_0s)
+
+. 
+. mat rownames F_1s="lnemp" "lnemp2"
+
+. mat colnames F_1s="Cluster" "Bootstrap"
+
+. 
+. mat rownames F_0s="lnemp" "lnemp2"
+
+. mat colnames F_0s="Cluster" "Bootstrap"
+
+. 
+. matrix list F_1
+
+F_1[2,2]
+          Cluster  Bootstrap
+ lnemp       1000         52
+lnemp2       1000        143
+
+. matrix list F_0
+
+F_0[2,2]
+          Cluster  Bootstrap
+ lnemp          0        948
+lnemp2          0        857
+
+. 
+. matrix list F_1s
+
+F_1s[2,2]
+          Cluster  Bootstrap
+ lnemp        918         48
+lnemp2        918          0
+
+. matrix list F_0s
+
+F_0s[2,2]
+          Cluster  Bootstrap
+ lnemp          0        870
+lnemp2          0        918
+
+. 
+. 
+. esttab m(F_1s) using F_1_R.tex, replace title(Coeffic
+> ient of treatment significant? Frecuency (few cluster
+> s)) nomtitles booktabs
+(output written to F_1_R.tex)
+
+. 
+. esttab m(F_0s) using F_0_R.tex, replace title(Coeffic
+> ient of treatment insignificant? Frecuency (few clust
+> ers)) nomtitles booktabs
+(output written to F_0_R.tex)
+
+. 
+. tex \input{F_1_R.tex}
+
+. tex \input{F_0_R.tex}
+
+. 
+. */
+. 
+. 
+. 
+. 
+. **********************
+. ******* PROBLEM 5*****
+. **********************
+. 
+. tex \bigskip
+
+. 
+. clear
+
+. 
+. use census_sample_30_50, clear
+
+. 
+. texdoc append_snippet 15
+
+. 
+. 
+. * Foreign born
+. gen FB=0
+
+. replace FB=1 if bpld>15000
+(7,161 real changes made)
+
+. 
+. * English proefficiency:
+. 
+. gen english=0
+
+. replace english=1 if speakeng==3 | speakeng==4
+(61,233 real changes made)
+
+. 
+. * 1. Bivariate OLS Regression
+.         regress lnwage FB, robust
+
+Linear regression                               Number 
+> of obs     =     51,816
+                                                F(1, 51
+> 814)       =      26.12
+                                                Prob > 
+> F          =     0.0000
+                                                R-squar
+> ed         =     0.0006
+                                                Root MS
+> E          =     .71874
+
+-------------------------------------------------------
+> -----------------------
+             |               Robust
+      lnwage |      Coef.   Std. Err.      t    P>|t|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+          FB |  -.0560691   .0109713    -5.11   0.000  
+>   -.0775728                                          
+>               -.0345653
+       _cons |   2.786602   .0033088   842.17   0.000  
+>    2.780116                                          
+>                2.793087
+-------------------------------------------------------
+> -----------------------
+
+. eststo Bivariate
+
+.                 estadd scalar FB = _b[FB]
+
+added scalar:
+                 e(FB) =  -.05606905
+
+.                 estadd scalar se_FB = _se[FB]
+
+added scalar:
+              e(se_FB) =  .01097126
+
+.                 estadd local Estimator "OLS Bivariate
+> "
+
+added macro:
+          e(Estimator) : "OLS Bivariate"
+
+.  
+. * 2.OLS regression with simple controls
+. 
+.         regress lnwage FB exp exp2  i.married i.races
+> ing i.hisp i.educ99 i.english i.gender, robust
+
+Linear regression                               Number 
+> of obs     =     51,816
+                                                F(35, 5
+> 1780)      =     286.07
+                                                Prob > 
+> F          =     0.0000
+                                                R-squar
+> ed         =     0.1759
+                                                Root MS
+> E          =     .65287
+
+-------------------------------------------------------
+> -----------------------
+             |               Robust
+      lnwage |      Coef.   Std. Err.      t    P>|t|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+          FB |   .0556124   .0138207     4.02   0.000  
+>    .0285236                                          
+>                .0827012
+         exp |   .0282917   .0038865     7.28   0.000  
+>    .0206741                                          
+>                .0359093
+        exp2 |  -.0004641   .0000884    -5.25   0.000  
+>   -.0006374                                          
+>               -.0002908
+   1.married |   .0979865    .006251    15.68   0.000  
+>    .0857345                                          
+>                .1102384
+             |
+   racesingd |
+'Other ra..  |  -.0335647   .0203663    -1.65   0.099  
+>   -.0734828                                          
+>                .0063534
+      Black  |  -.0288039   .0103372    -2.79   0.005  
+>   -.0490649                                          
+>               -.0085429
+AI (Amer..)  |  -.1155598   .0291032    -3.97   0.000  
+>   -.1726024                                          
+>               -.0585173
+AN (Alas..)  |   .2148349   .0605602     3.55   0.000  
+>    .0961362                                          
+>                .3335335
+AI/AN (A..)  |   .0863429   .0836281     1.03   0.302  
+>    -.077569                                          
+>                .2502548
+Asian Ind..  |   .0759054   .0495272     1.53   0.125  
+>   -.0211684                                          
+>                .1729793
+    Chinese  |   .0610298   .0381431     1.60   0.110  
+>   -.0137312                                          
+>                .1357907
+   Filipino  |   .0588892   .0389511     1.51   0.131  
+>   -.0174553                                          
+>                .1352337
+   Japanese  |   .0379511   .0683884     0.55   0.579  
+>   -.0960909                                          
+>                .1719932
+     Korean  |   -.012903   .0616625    -0.21   0.834  
+>    -.133762                                          
+>                .1079561
+      Asian  |  -.0214705   .0386767    -0.56   0.579  
+>   -.0972772                                          
+>                .0543363
+   Hawaiian  |   .2691907   .0995983     2.70   0.007  
+>    .0739771                                          
+>                .4644044
+PI (Paci..)  |  -.0124736   .0860502    -0.14   0.885  
+>   -.1811328                                          
+>                .1561856
+Asian an..)  |  -.0644634     .11305    -0.57   0.569  
+>   -.2860426                                          
+>                .1571157
+Other rac..  |  -.0155081   .0755876    -0.21   0.837  
+>   -.1636606                                          
+>                .1326444
+             |
+      1.hisp |  -.0421942   .0150538    -2.80   0.005  
+>   -.0716998                                          
+>               -.0126886
+             |
+      educ99 |
+1st-4th g..  |   .0146994   .0637512     0.23   0.818  
+>   -.1102536                                          
+>                .1396524
+5th-8th g..  |   .0067249   .0390971     0.17   0.863  
+>   -.0699057                                          
+>                .0833556
+  9th grade  |  -.0039539   .0423205    -0.09   0.926  
+>   -.0869025                                          
+>                .0789948
+ 10th grade  |   .0594714   .0406796     1.46   0.144  
+>   -.0202611                                          
+>                .1392039
+ 11th grade  |   .0356695    .039908     0.89   0.371  
+>   -.0425505                                          
+>                .1138895
+12th grad..  |   .1400164   .0386258     3.62   0.000  
+>    .0643094                                          
+>                .2157234
+High scho..  |   .2019176    .035299     5.72   0.000  
+>    .1327313                                          
+>                .2711039
+Some coll..  |   .3453238   .0354793     9.73   0.000  
+>    .2757841                                          
+>                .4148635
+Associate..  |   .4337455   .0362831    11.95   0.000  
+>    .3626303                                          
+>                .5048606
+Bachelors..  |    .683647   .0358258    19.08   0.000  
+>     .613428                                          
+>                 .753866
+Masters d..  |   .8431184   .0370836    22.74   0.000  
+>    .7704342                                          
+>                .9158026
+Professio..  |   1.007327    .043897    22.95   0.000  
+>    .9212881                                          
+>                1.093365
+Doctorate..  |   .8912202   .0481237    18.52   0.000  
+>    .7968973                                          
+>                .9855432
+             |
+   1.english |   .1165196   .0178143     6.54   0.000  
+>    .0816034                                          
+>                .1514358
+    1.gender |   .2918288   .0057803    50.49   0.000  
+>    .2804992                                          
+>                .3031583
+       _cons |   1.700369   .0556019    30.58   0.000  
+>    1.591389                                          
+>                 1.80935
+-------------------------------------------------------
+> -----------------------
+
+. eststo Simple
+
+.                 estadd scalar FB = _b[FB]
+
+added scalar:
+                 e(FB) =  .0556124
+
+.                 estadd scalar se_FB = _se[FB]
+
+added scalar:
+              e(se_FB) =  .01382074
+
+.                 estadd local Estimator "OLS Controls"
+
+added macro:
+          e(Estimator) : "OLS Controls"
+
+.         
+. 
+. *3. OLS regression with fully saturated controls
+. 
+.         /*cap drop demogroup
+>         egen demogroup = group(exp exp2 married races
+> ing hisp educ99 english gender)
+>         sum demogroup 
+> 
+>         areg lnwage FB ,   robust a(demogroup)
+> eststo Saturated
+>                 estadd scalar FB = _b[FB]
+>                 estadd scalar se_FB = _se[FB]
+>                 estadd local Estimator "OLS Saturated
+> "*/
+.         *or*    
+.                         cap drop demogroup
+
+.         egen demogroup = group(exp exp2 married races
+> ing hisp educ99 english gender)
+
+.         sum demogroup 
+
+    Variable |        Obs        Mean    Std. Dev.     
+>   Min        Max
+-------------+-----------------------------------------
+> ----------------
+   demogroup |     65,741    3813.127     2110.23      
+>     1       7417
+
+. 
+.         reghdfe lnwage FB ,    a(demogroup)
+(dropped 3190 singleton observations)
+(MWFE estimator converged in 1 iterations)
+
+HDFE Linear regression                            Numbe
+> r of obs                                             
+>            =     48,626
+Absorbing 1 HDFE group                            F(   
+> 1,  45611)                                           
+>            =      27.54
+                                                  Prob 
+> > F                                                  
+>            =     0.0000
+                                                  R-squ
+> ared                                                 
+>            =     0.2385
+                                                  Adj R
+> -squared                                             
+>            =     0.1882
+                                                  Withi
+> n R-sq.                                              
+>            =     0.0006
+                                                  Root 
+> MSE                                                  
+>            =     0.6457
+
+-------------------------------------------------------
+> -----------------------
+      lnwage |      Coef.   Std. Err.      t    P>|t|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+          FB |    .086362   .0164556     5.25   0.000  
+>    .0541089                                          
+>                .1186152
+       _cons |   2.778827   .0031647   878.06   0.000  
+>    2.772624                                          
+>                 2.78503
+-------------------------------------------------------
+> -----------------------
+
+Absorbed degrees of freedom:
+-----------------------------------------------------+
+ Absorbed FE | Categories  - Redundant  = Num. Coefs |
+-------------+---------------------------------------|
+   demogroup |      3014           0        3014     |
+-----------------------------------------------------+
+
+. eststo Saturated
+
+.                 estadd scalar FB1 = _b[FB]
+
+added scalar:
+                e(FB1) =  .08636202
+
+.                 estadd scalar se_FB1 = _se[FB]
+
+added scalar:
+             e(se_FB1) =  .01645555
+
+.                 estadd local Estimator "OLS Saturated
+> "
+
+added macro:
+          e(Estimator) : "OLS Saturated"
+
+.  
+. *4. Coarsened exact matching using CEM
+. 
+.          cem exp exp2 married racesing hisp educ99 en
+> glish sex, tr(FB)
+
+Matching Summary:
+-----------------
+Number of strata: 6108
+Number of matched strata: 1480
+
+               0      1
+      All  58580   7161
+  Matched  45893   3593
+Unmatched  12687   3568
+
+
+Multivariate L1 distance: .24023928
+
+Univariate imbalance:
+
+                L1      mean       min       25%
+     exp    .00208    .00208         0         0
+    exp2   3.8e-14    .05197         0         0
+ married   4.8e-14  -7.1e-14         0         0
+racesing    .02641    .04693         0         0
+    hisp   4.4e-14  -3.3e-14         0         0
+  educ99   3.7e-14  -1.1e-12         0         0
+ english   4.9e-14  -7.4e-14         0         0
+     sex   4.4e-14  -2.1e-14         0         0
+
+               50%       75%       max
+     exp         0         0         0
+    exp2         0         0         0
+ married         0         0         0
+racesing         0         0         2
+    hisp         0         0         0
+  educ99         0         0         0
+ english         0         0         0
+     sex         0         0         0
+
+.          reg lnwage FB [iweight=cem_weights]
+
+      Source |       SS           df       MS      Numb
+> er of obs   =    37,081
+-------------+----------------------------------   F(1,
+>  37079)     =     11.35
+       Model |  6.32382092         1  6.32382092   Prob
+>  > F        =    0.0008
+    Residual |  20663.3396    37,079  .557278772   R-sq
+> uared       =    0.0003
+-------------+----------------------------------   Adj 
+> R-squared   =    0.0003
+       Total |  20669.6634    37,080  .557434289   Root
+>  MSE        =    .74651
+
+-------------------------------------------------------
+> -----------------------
+      lnwage |      Coef.   Std. Err.      t    P>|t|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+          FB |    .049921   .0148193     3.37   0.001  
+>    .0208748                                          
+>                .0789673
+       _cons |   2.724343   .0040283   676.29   0.000  
+>    2.716447                                          
+>                2.732239
+-------------------------------------------------------
+> -----------------------
+
+. eststo CEM
+
+.                  estadd scalar FB = _b[FB]
+
+added scalar:
+                 e(FB) =  .04992104
+
+.                  estadd scalar se_FB = _se[FB]
+
+added scalar:
+              e(se_FB) =  .01481931
+
+.                  estadd local Estimator "CEM"
+
+added macro:
+          e(Estimator) : "CEM"
+
+.         
+.         esttab using P5_T1.tex, replace not nostar se
+>  keep( ) ///
+>         label nodepvar nonumber title(Estimates of FB
+> ) ///
+>         stats(FB se_FB N Estimator, fmt(3 3 0) layout
+> (@ "(@)" @) ///
+>         label("FB" "    " "Obs."))  ///
+>         
+(output written to P5_T1.tex)
+
+.  
+. tex \newgeometry{left=1.5cm,bottom=0.1cm}
+
+. tex \input{P5_T1.tex}
+
+. tex \restoregeometry
+
+. 
+.         
+. 
+. *5. Prosensity Score Matching - using simple covariat
+> es and 10 strata
+. 
+. * First stage - prediction using Probit * 
+.  
+.         cap drop fbprop
+
+.         probit FB exp exp2 married i.racesing hisp i.
+> educ99 english sex    
+
+Iteration 0:   log likelihood = -22632.459  
+Iteration 1:   log likelihood = -11667.762  
+Iteration 2:   log likelihood = -11413.062  
+Iteration 3:   log likelihood = -11410.357  
+Iteration 4:   log likelihood = -11410.334  
+Iteration 5:   log likelihood = -11410.334  
+
+Probit regression                               Number 
+> of obs                                               
+>            =     65,741
+                                                LR chi2
+> (34)                                                 
+>            =   22444.25
+                                                Prob > 
+> chi2                                                 
+>            =     0.0000
+Log likelihood = -11410.334                     Pseudo 
+> R2                                                   
+>            =     0.4958
+
+-------------------------------------------------------
+> -----------------------
+          FB |      Coef.   Std. Err.      z    P>|z|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+         exp |   .0282834   .0122786     2.30   0.021  
+>    .0042177                                          
+>                 .052349
+        exp2 |  -.0009048   .0002797    -3.23   0.001  
+>   -.0014531                                          
+>               -.0003565
+     married |    .137967   .0194832     7.08   0.000  
+>    .0997806                                          
+>                .1761534
+             |
+   racesingd |
+'Other ra..  |   .1695235   .0381155     4.45   0.000  
+>    .0948185                                          
+>                .2442285
+      Black  |   .4730322   .0276443    17.11   0.000  
+>    .4188504                                          
+>                 .527214
+AI (Amer..)  |  -.9631905   .1542715    -6.24   0.000  
+>   -1.265557                                          
+>                -.660824
+AN (Alas..)  |  -1.292923   .3714601    -3.48   0.001  
+>   -2.020972                                          
+>                -.564875
+AI/AN (A..)  |  -.0756862   .1450547    -0.52   0.602  
+>   -.3599881                                          
+>                .2086158
+Asian Ind..  |   3.062902    .114479    26.76   0.000  
+>    2.838527                                          
+>                3.287276
+    Chinese  |   2.469008   .0898581    27.48   0.000  
+>    2.292889                                          
+>                2.645126
+   Filipino  |   2.862945   .0941589    30.41   0.000  
+>    2.678397                                          
+>                3.047493
+   Japanese  |   1.457744   .1195485    12.19   0.000  
+>    1.223433                                          
+>                1.692055
+     Korean  |   2.802623   .1655965    16.92   0.000  
+>     2.47806                                          
+>                3.127186
+      Asian  |   2.567974   .0959504    26.76   0.000  
+>    2.379915                                          
+>                2.756033
+   Hawaiian  |   .0808734   .4455169     0.18   0.856  
+>   -.7923237                                          
+>                .9540706
+PI (Paci..)  |   1.567854   .1626117     9.64   0.000  
+>    1.249141                                          
+>                1.886568
+Asian an..)  |   .4754187    .337482     1.41   0.159  
+>   -.1860339                                          
+>                1.136871
+Other rac..  |   1.536726   .1762661     8.72   0.000  
+>     1.19125                                          
+>                1.882201
+             |
+        hisp |   1.203791   .0289339    41.60   0.000  
+>    1.147082                                          
+>                  1.2605
+             |
+      educ99 |
+1st-4th g..  |   .3817871   .1346011     2.84   0.005  
+>    .1179738                                          
+>                .6456004
+5th-8th g..  |  -.0312511   .0812249    -0.38   0.700  
+>    -.190449                                          
+>                .1279468
+  9th grade  |  -.4558224   .0894275    -5.10   0.000  
+>   -.6310971                                          
+>               -.2805477
+ 10th grade  |  -.6325658   .0915888    -6.91   0.000  
+>   -.8120764                                          
+>               -.4530551
+ 11th grade  |  -.7093928    .092508    -7.67   0.000  
+>   -.8907052                                          
+>               -.5280804
+12th grad..  |  -.3123104   .0834022    -3.74   0.000  
+>   -.4757757                                          
+>               -.1488451
+High scho..  |   -.630144   .0741536    -8.50   0.000  
+>   -.7754823                                          
+>               -.4848057
+Some coll..  |  -.5315172   .0748896    -7.10   0.000  
+>    -.678298                                          
+>               -.3847363
+Associate..  |   -.435903   .0791653    -5.51   0.000  
+>   -.5910642                                          
+>               -.2807418
+Bachelors..  |  -.3157756   .0759535    -4.16   0.000  
+>   -.4646418                                          
+>               -.1669095
+Masters d..  |  -.1046772   .0800929    -1.31   0.191  
+>   -.2616563                                          
+>                 .052302
+Professio..  |  -.1205031   .0927019    -1.30   0.194  
+>   -.3021955                                          
+>                .0611892
+Doctorate..  |   .2149299   .1076703     2.00   0.046  
+>    .0038999                                          
+>                .4259599
+             |
+     english |  -1.689539   .0298573   -56.59   0.000  
+>   -1.748058                                          
+>                -1.63102
+         sex |   .0030201   .0179187     0.17   0.866  
+>   -.0320998                                          
+>                .0381401
+       _cons |  -.0559474   .1511461    -0.37   0.711  
+>   -.3521884                                          
+>                .2402936
+-------------------------------------------------------
+> -----------------------
+
+.         predict fbprop 
+(option pr assumed; Pr(FB))
+
+.  
+. * Create 10 bins of fb propensity * 
+. cap drop fbprop_n
+
+.         xtile fbprop_n = fbprop, nq(10)
+
+. 
+. 
+. texdoc append_snippet 16
+
+. 
+. * Check covariate balance *
+. *I could not include all the covariates, it said too 
+> many stats. 
+. texdoc stlog
+(opening texdoc stlog 797B_PS1_JL_6)
+
+. table fbprop_n FB, c(mean exp mean married mean races
+> ing mean hisp mean educ99) row
+
+----------------------------------------------------
+10        |
+quantiles |                    FB                   
+of fbprop |                   0                    1
+----------+-----------------------------------------
+        1 |            27.28281             27.94118
+          |            .3433456             .3647059
+          | 12.6768331527709961  10.7411766052246094
+          |                   0                    0
+          | 9.83210086822509766  9.84705924987792969
+          | 
+        2 |            23.30995                24.41
+          |            .4344489                  .41
+          | 10.0976362228393555  10.4399995803833008
+          |                   0                    0
+          | 10.0508136749267578  10.3900003433227539
+          | 
+        3 |            23.61466             23.52756
+          |            .6575066             .5748032
+          | 10.0652074813842773                   10
+          |            .0001553                    0
+          | 10.4848623275756836  10.7637796401977539
+          | 
+        4 |              19.362             18.91597
+          |            .9292649              .907563
+          | 10.0098628997802734                   10
+          |            .0001541                    0
+          | 10.0906152725219727  10.2352943420410156
+          | 
+        5 |            22.00368             21.53548
+          |            .7944828             .7612903
+          |  10.181915283203125  10.3741931915283203
+          |            .0009195                    0
+          | 11.2148656845092773  11.3161287307739258
+          | 
+        6 |             21.4017             20.81967
+          |            .6885457             .6338798
+          | 10.4786033630371094  10.3825139999389648
+          |            .0011261             .0054645
+          | 12.0387706756591797  12.0819673538208008
+          | 
+        7 |            21.74541              22.2963
+          |            .7948799                  .75
+          | 11.6778697967529297   11.435185432434082
+          |            .0012565                    0
+          | 12.5068321228027344  12.7685184478759766
+          | 
+        8 |             20.6952             20.10601
+          |            .6223354              .565371
+          | 14.1539926528930664  14.5583038330078125
+          |            .0006363                    0
+          | 11.9490928649902344  12.5229682922363281
+          | 
+        9 |            20.43398             20.79415
+          |            .6778761             .6738895
+          | 14.2688493728637695  13.5232934951782227
+          |            .2987611             .5872156
+          | 11.4302654266357422   11.219935417175293
+          | 
+       10 |            21.08562             20.96237
+          |               .6275             .6917505
+          | 17.2250003814697266    22.10040283203125
+          |             .665625             .5724346
+          |  10.364375114440918   8.7969818115234375
+          | 
+    Total |            22.20966             21.09831
+          |            .6588426              .679933
+          | 11.6240015029907227  19.1085052490234375
+          |            .0474565             .4731183
+          | 11.0315637588500977  9.60829448699951172
+----------------------------------------------------
+
+. texdoc stlog close
+(log-file written to 797B_PS1_JL_6.log.tex)
+
+.   
+. 
+. * Create within bin log wage for fb and not fb *
+. foreach j of numlist 0 1 {
+  2.         cap drop tr`j'
+  3.         cap drop lnwage_tr`j'
+  4.         gen tr`j' = 1 if FB==`j'
+  5.         egen lnwage_tr`j' = mean (lnwage*tr`j'), b
+> y(fbprop_n)   
+  6. }
+(7,161 missing values generated)
+(58,580 missing values generated)
+
+. 
+.   
+. * Create within bin log wage differential *
+. cap drop lnwdif
+
+. gen lnwdif = (lnwage_tr1-lnwage_tr0) if FB==1
+(58,580 missing values generated)
+
+. sum lnwdif
+
+    Variable |        Obs        Mean    Std. Dev.     
+>   Min        Max
+-------------+-----------------------------------------
+> ----------------
+      lnwdif |      7,161   -.0820432    .1055847    -.
+> 14657   .2209318
+
+.  
+. 
+. * Create weights for bin based on how many of fb in t
+> hat bin *
+. 
+. cap drop fbtot 
+
+. cap drop alltot
+
+. cap drop fbr
+
+. cap drop all
+
+. 
+. egen fbr = sum(FB), by(fbprop_n)
+
+. egen fbtot = sum(FB)
+
+. 
+. cap drop wt1  
+
+. gen wt1 = fbr/fbtot
+
+.  
+. 
+. cap drop first 
+
+. egen first = tag(fbprop_n) if FB==1 
+
+. 
+. * Show log wage differential within bins, and weighte
+> d average thereof *
+.  
+. table fbprop_n if FB==1 & first==1 [aw=wt1] , c(mean 
+> lnwdif) row  
+
+------------------------
+10        |
+quantiles |
+of fbprop | mean(lnwdif)
+----------+-------------
+        1 |      .061336
+        2 |     .1242924
+        3 |     .2209318
+        4 |      .139482
+        5 |     .0745163
+        6 |     .1270125
+        7 |     .1310723
+        8 |     .1051791
+        9 |    -.0154159
+       10 |      -.14657
+          | 
+    Total |    -.0820432
+------------------------
+
+. 
+. eststo PScore
+
+.                 estadd scalar FB = -0.077
+
+added scalar:
+                 e(FB) =  -.077
+
+.                 estadd scalar se_FB = 0.116
+
+added scalar:
+              e(se_FB) =  .116
+
+.                 estadd local Estimator "Match"
+
+added macro:
+          e(Estimator) : "Match"
+
+. 
+. 
+. *6. Propensity Score Reweighting using psmatch2 simpl
+> e covariates and 10 nearest neighbors
+. 
+. psmatch2 FB exp exp2 i.married i.racesing i.hisp i.ed
+> uc99 i.english i.gender , out (lnwage) neighbor(10)  
+
+Probit regression                               Number 
+> of obs                                               
+>            =     51,816
+                                                LR chi2
+> (34)                                                 
+>            =   16778.83
+                                                Prob > 
+> chi2                                                 
+>            =     0.0000
+Log likelihood = -8774.4767                     Pseudo 
+> R2                                                   
+>            =     0.4888
+
+-------------------------------------------------------
+> -----------------------
+          FB |      Coef.   Std. Err.      z    P>|z|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+         exp |   .0356686    .014023     2.54   0.011  
+>    .0081839                                          
+>                .0631532
+        exp2 |  -.0010356   .0003197    -3.24   0.001  
+>   -.0016623                                          
+>               -.0004089
+   1.married |   .0903652   .0220896     4.09   0.000  
+>    .0470705                                          
+>                .1336599
+             |
+   racesingd |
+'Other ra..  |   .1628515   .0446813     3.64   0.000  
+>    .0752778                                          
+>                .2504252
+      Black  |   .5068756   .0310889    16.30   0.000  
+>    .4459425                                          
+>                .5678088
+AI (Amer..)  |  -.9523104   .1820428    -5.23   0.000  
+>   -1.309108                                          
+>               -.5955131
+AN (Alas..)  |  -1.104171   .3837263    -2.88   0.004  
+>   -1.856261                                          
+>               -.3520814
+AI/AN (A..)  |    .016538   .1677131     0.10   0.921  
+>   -.3121736                                          
+>                .3452496
+Asian Ind..  |   3.086418    .131292    23.51   0.000  
+>     2.82909                                          
+>                3.343746
+    Chinese  |   2.396481    .097024    24.70   0.000  
+>    2.206318                                          
+>                2.586645
+   Filipino  |    2.97109   .1041097    28.54   0.000  
+>    2.767039                                          
+>                3.175142
+   Japanese  |   1.460961   .1355103    10.78   0.000  
+>    1.195365                                          
+>                1.726556
+     Korean  |   2.944704   .2013085    14.63   0.000  
+>    2.550147                                          
+>                3.339262
+      Asian  |   2.637236   .1109946    23.76   0.000  
+>    2.419691                                          
+>                2.854782
+   Hawaiian  |   .3864482   .4628827     0.83   0.404  
+>   -.5207851                                          
+>                1.293682
+PI (Paci..)  |   1.323431   .1871161     7.07   0.000  
+>    .9566899                                          
+>                1.690172
+Asian an..)  |   .7315227   .3651761     2.00   0.045  
+>    .0157908                                          
+>                1.447255
+Other rac..  |   1.296351   .2286355     5.67   0.000  
+>    .8482338                                          
+>                1.744469
+             |
+      1.hisp |   1.210577   .0331858    36.48   0.000  
+>    1.145534                                          
+>                 1.27562
+             |
+      educ99 |
+1st-4th g..  |   .6245027   .2043251     3.06   0.002  
+>    .2240329                                          
+>                1.024972
+5th-8th g..  |  -.0587962   .1127066    -0.52   0.602  
+>   -.2796971                                          
+>                .1621046
+  9th grade  |   -.520148   .1224894    -4.25   0.000  
+>   -.7602229                                          
+>               -.2800732
+ 10th grade  |  -.6781673   .1222692    -5.55   0.000  
+>   -.9178105                                          
+>               -.4385241
+ 11th grade  |  -.7992673   .1228168    -6.51   0.000  
+>   -1.039984                                          
+>               -.5585507
+12th grad..  |  -.4362007   .1130206    -3.86   0.000  
+>    -.657717                                          
+>               -.2146844
+High scho..  |  -.7881866   .1034181    -7.62   0.000  
+>   -.9908824                                          
+>               -.5854909
+Some coll..  |  -.6881613   .1040001    -6.62   0.000  
+>   -.8919978                                          
+>               -.4843249
+Associate..  |  -.5952665   .1077938    -5.52   0.000  
+>   -.8065384                                          
+>               -.3839947
+Bachelors..  |  -.4624543   .1048209    -4.41   0.000  
+>   -.6678995                                          
+>                -.257009
+Masters d..  |  -.2857571   .1084269    -2.64   0.008  
+>   -.4982698                                          
+>               -.0732444
+Professio..  |  -.2753963     .12061    -2.28   0.022  
+>   -.5117876                                          
+>                -.039005
+Doctorate..  |   .1108333    .131923     0.84   0.401  
+>    -.147731                                          
+>                .3693975
+             |
+   1.english |  -1.695156   .0358077   -47.34   0.000  
+>   -1.765338                                          
+>               -1.624974
+    1.gender |    .030958   .0205081     1.51   0.131  
+>   -.0092372                                          
+>                .0711532
+       _cons |   .0118808   .1813031     0.07   0.948  
+>   -.3434668                                          
+>                .3672284
+-------------------------------------------------------
+> -----------------------
+-------------------------------------------------------
+> ---------------------------------
+        Variable     Sample |    Treated     Controls  
+>  Difference         S.E.   T-stat
+----------------------------+--------------------------
+> ---------------------------------
+          lnwage  Unmatched | 2.73053272   2.78660178  
+> -.056069054   .010395596    -5.39
+                        ATT | 2.73053272   2.72427587  
+>  .006256856   .032299858     0.19
+----------------------------+--------------------------
+> ---------------------------------
+Note: S.E. does not take into account that the propensi
+> ty score is estimated.
+
+           | psmatch2:
+ psmatch2: |   Common
+ Treatment |  support
+assignment | On suppor |     Total
+-----------+-----------+----------
+ Untreated |    46,488 |    46,488 
+   Treated |     5,328 |     5,328 
+-----------+-----------+----------
+     Total |    51,816 |    51,816 
+
+. *display r(att)
+. eststo Psmatch_1
+
+.                 estadd scalar FB = r(att)
+
+added scalar:
+                 e(FB) =  .00625686
+
+.                 estadd scalar se_FB = 0.032
+
+added scalar:
+              e(se_FB) =  .032
+
+.                 estadd local Estimator "Match"
+
+added macro:
+          e(Estimator) : "Match"
+
+. 
+.  
+. *7. Propensity Score Reweighting using own calculatio
+> ns
+.  
+. cap drop fbprop
+
+. probit FB married exp exp2 hisp english gender educ99
+>  racesing     
+
+Iteration 0:   log likelihood = -22632.459  
+Iteration 1:   log likelihood = -12611.088  
+Iteration 2:   log likelihood = -12422.158  
+Iteration 3:   log likelihood = -12421.847  
+Iteration 4:   log likelihood = -12421.847  
+
+Probit regression                               Number 
+> of obs                                               
+>            =     65,741
+                                                LR chi2
+> (8)                                                  
+>            =   20421.23
+                                                Prob > 
+> chi2                                                 
+>            =     0.0000
+Log likelihood = -12421.847                     Pseudo 
+> R2                                                   
+>            =     0.4511
+
+-------------------------------------------------------
+> -----------------------
+          FB |      Coef.   Std. Err.      z    P>|z|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+     married |   .1790976   .0185023     9.68   0.000  
+>    .1428337                                          
+>                .2153615
+         exp |    .015382   .0118121     1.30   0.193  
+>   -.0077692                                          
+>                .0385333
+        exp2 |  -.0005893   .0002689    -2.19   0.028  
+>   -.0011164                                          
+>               -.0000622
+        hisp |   1.301905   .0234832    55.44   0.000  
+>    1.255879                                          
+>                1.347932
+     english |  -1.794474   .0279731   -64.15   0.000  
+>     -1.8493                                          
+>               -1.739648
+      gender |   .0087089   .0172166     0.51   0.613  
+>   -.0250349                                          
+>                .0424527
+      educ99 |   .0263041   .0032331     8.14   0.000  
+>    .0199673                                          
+>                .0326408
+   racesingd |   .0593118   .0009624    61.63   0.000  
+>    .0574255                                          
+>                .0611982
+       _cons |  -1.223808   .1318523    -9.28   0.000  
+>   -1.482234                                          
+>               -.9653819
+-------------------------------------------------------
+> -----------------------
+
+. predict fbprop
+(option pr assumed; Pr(FB))
+
+. 
+. 
+. summ FB
+
+    Variable |        Obs        Mean    Std. Dev.     
+>   Min        Max
+-------------+-----------------------------------------
+> ----------------
+          FB |     65,741    .1089275    .3115505      
+>     0          1
+
+. local p=r(mean)
+
+. cap drop w3
+
+. gen w3 = cond(FB, `p'/(1-`p'), fbprop/(1-fbprop))
+
+. 
+. texdoc stlog, nolog 
+
+. twoway (kdensity fbprop if FB==1)(kdensity fbprop if 
+> FB==0) ///
+> (kdensity fbprop if FB==0 [aw=w3]), ///
+> legend(on label(1 "Treated") label(2 "Control (unweig
+> hted)") ///
+> label(3 "Control (weighted)")) title("Comparison of d
+> istributions")
+
+. texdoc stlog close 
+
+. texdoc graph
+(graph written to 797B_PS1_JL_7.pdf)
+
+. 
+. reg lnwage FB [aw=w3]
+(sum of wgt is 9,624.14426088752)
+
+      Source |       SS           df       MS      Numb
+> er of obs   =    51,816
+-------------+----------------------------------   F(1,
+>  51814)     =    105.42
+       Model |  50.9286594         1  50.9286594   Prob
+>  > F        =    0.0000
+    Residual |  25030.9998    51,814  .483093369   R-sq
+> uared       =    0.0020
+-------------+----------------------------------   Adj 
+> R-squared   =    0.0020
+       Total |  25081.9285    51,815  .484066939   Root
+>  MSE        =    .69505
+
+-------------------------------------------------------
+> -----------------------
+      lnwage |      Coef.   Std. Err.      t    P>|t|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+          FB |   .1248108   .0121559    10.27   0.000  
+>    .1009852                                          
+>                .1486365
+       _cons |   2.605722   .0031623   824.00   0.000  
+>    2.599524                                          
+>                 2.61192
+-------------------------------------------------------
+> -----------------------
+
+. eststo Own
+
+.                 estadd scalar FB = _b[FB]
+
+added scalar:
+                 e(FB) =  .12481082
+
+.                 estadd scalar se_FB = _se[FB]
+
+added scalar:
+              e(se_FB) =  .01215589
+
+.                 estadd local Estimator "Match"
+
+added macro:
+          e(Estimator) : "Match"
+
+. 
+.  
+. *8. Propensity Score Reweighting Using teffects ipw
+.  
+.  teffects ipw (lnwage) (FB exp exp2 married racesing 
+> hisp educ99 english gender,probit), atet vce(robust)
+
+Iteration 0:   EE criterion =  9.931e-17  
+Iteration 1:   EE criterion =  4.874e-28  
+
+Treatment-effects estimation                    Number 
+> of obs                                               
+>            =     51,816
+Estimator      : inverse-probability weights
+Outcome model  : weighted mean
+Treatment model: probit
+-------------------------------------------------------
+> -----------------------
+             |               Robust
+      lnwage |      Coef.   Std. Err.      z    P>|z|  
+>    [95% Con                                          
+>            f. Interval]
+-------------+-----------------------------------------
+> -----------------------
+ATET         |
+          FB |
+   (1 vs 0)  |   .1230304   .1420731     0.87   0.387  
+>   -.1554277                                          
+>                .4014884
+-------------+-----------------------------------------
+> -----------------------
+POmean       |
+          FB |
+          0  |   2.607502   .1419197    18.37   0.000  
+>    2.329345                                          
+>                 2.88566
+-------------------------------------------------------
+> -----------------------
+
+. eststo IPW
+
+.                 estadd scalar FB = _b[r1vs0.FB]
+
+added scalar:
+                 e(FB) =  .12303036
+
+.                 estadd scalar se_FB = _se[r1vs0.FB]
+
+added scalar:
+              e(se_FB) =  .14207306
+
+.                 estadd local Estimator "Match"
+
+added macro:
+          e(Estimator) : "Match"
+
+. 
+. texdoc append_snippet 17
+
+. 
+. 
+. esttab using P5_T2.tex, replace not nostar se keep( )
+>  ///
+>         label nodepvar nonumber title(Estimates of FB
+> ) ///
+>         stats(FB se_FB N Estimator, fmt(3 3 0) layout
+> (@ "(@)" @) ///
+>         label("FB" "    " "Obs."))  ///
+>         addnotes(Average Treatment On Treated for mat
+> ching models)
+(output written to P5_T2.tex)
+
+. 
+. 
+.  
+. tex \newgeometry{left=1.5cm,bottom=0.1cm}
+
+. tex \input{P5_T2.tex}
+
+. tex \restoregeometry
+
+. 
+. 
+. 
+. texdoc append_snippet 18
+
+. texdoc close
+(texdoc output written to 797B_PS1_JL.tex)
+
+. 
+end of do-file
+
+. log close
+      name:  <unnamed>
+       log:  C:\Users\User\Documents\GitHub\797b-proble
+> m-sets\JLPS1.log
+  log type:  text
+ closed on:  29 Sep 2020, 22:31:24
+-------------------------------------------------------
