@@ -1,0 +1,100 @@
+\documentclass[12pt]{article}
+\usepackage{stata}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{rotating}
+\begin{document}
+\author{Jesús Lara Jáuregui}
+\title{Problem Set 1}
+\maketitle
+\section{Problem One. OLS in MATA}
+\subsection{Part 1}
+In this problem I created the program e-class program myreg1. This program takes as input a dependent variable $y$ and a set of independent variables or regressors $X_k$. The program transform these variables into a vector and matrix respectively and performs the operations necessary to get our OLS estimates and the associated variance-covariance matrix. the output is thus a $b_{(k+1)x1 vector}$ (OLS estimates)  and a $V_(k+1)x(k+1)$ matrix (Variance-covariance).
+
+The log below shows that the results of myreg1 are the same as those obtained using Stata's embed
+\ Results with myreg1
+\begin{stlog}\input{797B_PS1_JL_1.log.tex}\end{stlog}
+\ Results with Stata OlS command
+\begin{stlog}\input{797B_PS1_JL_2.log.tex}\end{stlog}
+\input{P5_T2.tex}
+\subsection{Part 2}
+\pagebreak
+In this part I created the program myreg2 which takes the same inputs as myreg1 and gives the same vector of OLS estimates $b$. myreg2 takes the variables from Stata and then implements a second program called myols(X,Y), which is the one that actually calculates the OLS estimates and the variance-covariance Matrix $V$ adjusted for arbitrary heteroscedasticity. With respect to the OLS estimates, instead of calculating them with the cross product (and inverse) of the whole $X$ matrix and $y$ vector, it performs the sum of the cross product of each row (observations). The same approach is used for calculating the matrix $V$.
+
+The log below shows that my results are exactly the same as those obtained using Stata's regress command and "robust" option. 
+
+\begin{stlog}\input{797B_PS1_JL_3.log.tex}\end{stlog}
+\ Results with Stata's OLS and robust standard errors
+\begin{stlog}\input{797B_PS1_JL_4.log.tex}\end{stlog}
+\pagebreak
+
+\section{Problem 2. Poisson using Maximum Likelihood}
+
+If $y_i$ is distributed Poission with mean $exp(X^{'}_i \beta)$, hence the likelihood function for a sample of $N$ observations is given by:
+
+$$ L(\beta)=\prod_{i=1}^{N}\frac{1}{y_{i}!}exp((X^{'}\beta)y_i)exp(-exp(X^{'}\beta))$$
+
+
+And taking logs we get:
+
+$$lnL(\beta)=\sum_{i}^{N}[-exp(X^{'}\beta)+y_i exp(X^{'}\beta)-ln(y_i !)]$$
+
+Which is the form we use for pur maximum-likelihood estimation
+I made two .ado files, one containing the generation of the evaluator program and the other one that takes a dependent and independent variables from Stata and performs the Maximum Likelihood Estimation. Those .aso files are attached in the folder. 
+
+I show the histogram of the number of awards as well as the mean and variance of the variable. The key assumption of Poisson distribution is that the parameter $\lambda$ is the mean and variance of y. However, we see that the variance is almost twice bigger than the mean, which may reduce the usefulness of Poisson distribution to analyze the behavior of the number of awards. 
+
+\begin{stlog}\input{797B_PS1_JL_5.log.tex}\end{stlog}
+\begin{center}
+    \includegraphics{797B_PS1_JL_5.pdf}
+\end{center}
+In the table below I show the results of the estimation using Stata's command and mypois. I get the same results.
+\input{P2_MV.tex}
+\input{Table_P2.tex}
+\pagebreak
+\section{Problem 3. Mean Squared Error simulation - Sample Size and Distribution}
+
+
+In the first part of the program I create the program OLSPOIS, whose inputs are a number of observations N and an scalar $\sigma$ that generates a matrix-covariance matrix. My program generates a variable $y$ distributed poisson with mean $exp(2X_{1i}-X_{2i})$. Then it estimates a Poisson and an OLS regression ($lny$ as dependent variable) and returns the average of the squared errors. 
+
+
+I made a loop to run the program 1000 times with N=50,1000 and $sigma=0.01,0.1,1$ I show the average of the squared error (MSE) obtained in the six cases in the in the table below. The most salient fact is that MSE is always substantially smaller when using Poisson than with OLS. Additionally, MSE is smaller in both cases when the number of observations is large $(N=1000)$. Also, the smaller sigma (covariance and variance of $X_1$ and $X_2$), the smaller the MSE. 
+
+
+\input{MS.tex}
+\pagebreak
+\section{Problem 4. Small number of clusters - Wild Bootstrap}
+I generate the program randsim that takes as inputs a dependent variable $y$, a individual or cluster variable "unit" and a time variable "t". It randomly assigns treatment=1 to a unit with probability 0.25 and then generates a variable $y2=y+0.05*treatment$ If it happens that no unit is treated then it assigns the value one to a scalar called no_treated, zero otherwise. It then runs a regression with unit and time fixed effects using clustered standard errors at the unit level. a scalar sig_y takes the value of one if the coefficient of treatment is significant at the 5% level and zero otherwise. The program also calculates the estandard error following the wild bootstrap approach using the boottest command. If the coefficient of treatment is significant at the 5% level, the scalar bsig_y takes value 1, and zero otherwise. My program finally returns the 2 scalars.
+
+I run the program 1000 times in two cases: with all (25) and with just a few number of clusters (8). The frecuencies of the 4 scalars are reported below. These frequencies allow us to see what happens with the reccurence of type 1 and 2 errors with the different standard errors techniques of estimation. 
+
+I base my analysis in the following interpretation. Type 1 error means rejecting a null hypothesis that is actually true, whereas Type 2 means failing tu reject a false null hypothesis. Our null hypothesis is $H_0:\beta_{treatment}=0$. For $lnemp$ treatment is a placebo, so $H_0$ is actually true. Rejecting it means making the type 1 error. In contrast, for $lnemp2$, $H_0$ is false: there is a direct relationship between $lnemp2$ and treatment. So failing to reject $H_0$ would be the type 2 error. 
+
+The tables below show the frecuencies of ones and zeros of our four scalars. From first row of table 4 we can see the Bootstrap is much better at avoiding type 1 errors than cluster. However, from the second row of table 5 we see that type 2 error is very frequent with bootstrap. 
+
+The results for a small number of clusters are shown in tables 6 and 7. Whereas there are no major differences for type 1 error (first row of Table 6), in the second row of table 7 we can see that bootstrap is failing to find significance of treatment with lnemp2. That is, type 2 error becomes more frequent with a small number of clusters
+
+\input{F_1.tex}
+\input{F_0.tex}
+\input{F_1_R.tex}
+\input{F_0_R.tex}
+\bigskip
+\pagebreak
+\section{Problem 5: Matching}
+
+\newgeometry{left=1.5cm,bottom=0.1cm}
+\input{P5_T1.tex}
+\restoregeometry
+The table shows that the covariates are reasonably balanced.	
+\begin{stlog}\input{797B_PS1_JL_6.log.tex}\end{stlog}
+\begin{center}
+    \includegraphics{797B_PS1_JL_7.pdf}
+\end{center}
+I compare matching based on different 
+methods. I report each method's estimates in the table below. 
+\newgeometry{left=1.5cm,bottom=0.1cm}
+\input{P5_T2.tex}
+\restoregeometry
+
+\end{document}
+
