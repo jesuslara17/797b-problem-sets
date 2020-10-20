@@ -227,7 +227,6 @@ restore
 //DD regressions
 xtset statenum quarterdate
 
-eststo clear
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 	xtreg `var' CA_post i.quarterdate, fe robust
@@ -258,19 +257,106 @@ esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("log(teen wag
 
 // Synthetic controls
 
-xtset statenum quarterdate
+*teen_logwage(88) teen_logwage(89) teen_logwage(90) teen_logwage(91)///
 
-synth teen_logwage teen_logwage(92) teen_logwage(93) teen_logwage(94) teen_logwage(95) teen_logwage(96) teen_logwage(97) teen_logwage(98) teen_logwage(99)   teen_logwage(100) teen_logwage(101) teen_logwage(102) teen_logwage(103)  teen_logwage(104) teen_logwage(105) teen_logwage(106) teen_logwage(107)  teen_logwage(108) teen_logwage(109) teen_logwage(110) teen_logwage(111)   teen_logwage(112) teen_logwage(113) , trunit(6) trperiod(114) keep("example_synth.dta" , replace) 
 
-use example_synth,clear
-g period_4q = floor((_time-114)/4)
 
+
+//Method one: All quarterly pretreatment outcomes
+ 
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+
+synth `var' ///
+///`var'(88) `var'(89) `var'(90) `var'(91) /// 
+`var'(92) `var'(93) `var'(94) `var'(95) `var'(96) ///
+`var'(97) `var'(98) `var'(99) `var'(100) ///
+`var'(101) `var'(102) `var'(103) ///
+`var'(104) `var'(105) `var'(106) `var'(107) /// 
+`var'(108) `var'(109) `var'(110) `var'(111) ///
+`var'(112) `var'(113), trunit(6) trperiod(114) keep("spec1_`var'.dta", replace)
+
+preserve
+
+use spec1_`var', clear 
+rename _W_Weight s1w_`var'
+sa spec1_`var', replace 
+
+
+
+gen period_4q = floor((_time-114)/4)
+collapse (mean) _Y_treated (mean) _Y_synthetic, by(period_4q)
+/// More formating
+twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
+graph export "2Bi`var'_spec1.png", as(png) replace
+
+gen Yt_minus_Ys=_Y_treated-_Y_synthetic
+/// More formating
+twoway (connected Yt_minus_Ys period_4q), xline(0) yline(0) scheme(s1color) xtitle("Event Time") 
+graph export "2Bi`var'dif_spec1.png", as(png) replace
+restore 
+}
+
+
+
+
+//Method two: All quarterly pretreatment outcomes
+
+
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+
+synth `var' `var'(92(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(6) trperiod(114) keep("spec2_`var'.dta", replace)
+
+preserve
+
+use spec2_`var', clear 
+rename _W_Weight s2w_`var'
+sa spec2_`var', replace 
+
+gen period_4q = floor((_time-114)/4)
 collapse (mean) _Y_treated (mean) _Y_synthetic, by(period_4q)
 
-twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
 
-gen 
-// Method one: All pre-treatment quarterly outcomes
+/// Graph 1: CA vs Synthetic CA
+twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
+graph export "2Bi`var'_spec2.png", as(png) replace
+
+/// Graph 2: Difference between the two
+gen Yt_minus_Ys=_Y_treated-_Y_synthetic
+twoway (connected Yt_minus_Ys period_4q), xline(0) yline(0) scheme(s1color) xtitle("Event Time") 
+graph export "2Bi`var'dif_spec2.png", as(png) replace
+
+/// Estimate of the effect:
+
+restore 
+}
+
+// Make the table of weights 
+preserve 
+use spec1_overall_logwage, clear 
+merge 1:1 _Co_Number using spec2_overall_logwage, nogen
+merge 1:1 _Co_Number using spec1_teen_logwage, nogen
+merge 1:1 _Co_Number using spec2_teen_logwage, nogen
+merge 1:1 _Co_Number using spec1_overall_logemp, nogen
+merge 1:1 _Co_Number using spec2_overall_logemp, nogen
+merge 1:1 _Co_Number using spec1_teen_logemp, nogen
+merge 1:1 _Co_Number using spec2_teen_logemp, nogen
+drop _time _Y_treated _Y_synthetic
+
+
+mkmat _Co_Number s1w_overall_logwage s2w_overall_logwage s1w_teen_logwage s2w_teen_logwage, mat(Weights_Wage)
+
+mat colnames Weights_Wage ="State Number" "S1: Overall Wage" "S2: Overall Wage" "S1: Teen Wage" "S2: Teen Wage"  
+
+esttab m(Weights_Wage) using 2Bi_Weights_Wage.tex, replace title(Weights to Each State: Wage) nomtitles booktabs
+
+mkmat _Co_Number s1w_overall_logemp s2w_overall_logemp s1w_teen_logemp s2w_teen_logemp, mat(Weights_Emp)
+
+mat colnames Weights_Emp ="State Number" "S1: Overall Emp" "S2: Overall Emp" "S1: Teen Emp" "S2: Teen Emp" 
+
+esttab m(Weights_Emp) using 2Bi_Weights_Emp.tex, replace title(Weights to Each State: Employment) nomtitles booktabs
+
+restore 
+
 
 
 
