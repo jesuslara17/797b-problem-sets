@@ -190,6 +190,8 @@ forvalues i=`min'/`max'{
 	}
 //California is num 6
 drop if donor!=1& stateabb!="CA"
+
+egen statenum2=group(statenum)
 // Treatment variables
 gen post=0
 	replace post=1 if(time>=1988.75)
@@ -257,7 +259,8 @@ esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("log(teen wag
 
 // Synthetic controls
 
-*teen_logwage(88) teen_logwage(89) teen_logwage(90) teen_logwage(91)///
+
+** 2B i) **
 
 
 
@@ -357,15 +360,31 @@ esttab m(Weights_Emp) using 2Bi_Weights_Emp.tex, replace title(Weights to Each S
 
 restore 
 
-
-
-
-** 2B i) **
-
 ** 2B ii) **
 
-
 ** 2B iii) **
+
+xtset quarterdate statenum
+
+
+local placebolist "1 2 4 5 8 10 12 13 16 17 18 20 21 22 24 26 28 29 30 31 32 34 35 36 37 39 40 45 46 47 48 49 51 54 56" 
+
+foreach i in `placebolist'{
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+
+quiet synth `var' `var'(92(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(`i') trperiod(114) keep("$dta2b/2_`var'_`i'.dta", replace)
+
+preserve
+
+use "$dta2b/2_`var'_`i'.dta", clear 
+gen dif_`var'_`i'=
+save "$dta2b/2_`var'_`i'.dta", replace
+restore 
+}
+}
+
+// PLACEBO SYNTHETIC CONTROLS
+
 
 ** 2B iv) **
 

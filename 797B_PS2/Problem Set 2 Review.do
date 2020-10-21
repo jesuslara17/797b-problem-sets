@@ -186,7 +186,7 @@ twoway (line  meanemp quarterdate if treatsample==1) || ///
 
 synth teen_logwage    ///
   teen_logwage(92) teen_logwage(94(1)110) teen_logwage(98(2)101)  teen_logwage(102&104&106) ///
-  teen_logwage teen_logwage(110(1)113) , trunit(6) trperiod(114) keep("$data/example_synth.dta", replace) 
+  teen_logwage teen_logwage(110(1)113) , trunit(6) trperiod(114) keep("example_synth.dta", replace) 
 
   
 /*
