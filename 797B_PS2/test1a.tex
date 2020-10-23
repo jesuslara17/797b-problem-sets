@@ -1,0 +1,42 @@
+\begin{table}[htbp]\centering
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\caption{Minimum Wage Difference in Difference\label{auto}}
+\begin{tabular}{l*{1}{c}}
+\hline\hline
+                    &\multicolumn{1}{c}{(1)}\\
+                    &\multicolumn{1}{c}{ }\\
+\hline
+lnMW                &     -0.0557\sym{*}  \\
+                    &    (0.0243)         \\
+\hline\hline
+\end{tabular}
+\end{table}
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{2}{c}}
+\hline\hline
+\hline
+lnMW                &     -0.0557\sym{*}  &      0.0107         \\
+                    &    (0.0243)         &    (0.0289)         \\
+\hline\hline
+\end{tabular}
+}
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{3}{c}}
+\hline\hline
+\hline
+lnMW                &     -0.0557\sym{*}  &      0.0107         &      0.0534         \\
+                    &    (0.0243)         &    (0.0289)         &    (0.0438)         \\
+\hline
+Observations        &      200912         &      200912         &      200912         \\
+\hline\hline
+\multicolumn{4}{l}{\footnotesize \textit{Notes:} State-cluster-robust standard error in parentheses.}\\
+\multicolumn{4}{l}{\footnotesize Dependent variable is log(Min Wage).}\\
+\multicolumn{4}{l}{\footnotesize (1) state and year fixed effects no contorls.}\\
+\multicolumn{4}{l}{\footnotesize (2) state and year fixed effects with controls}\\
+\multicolumn{4}{l}{\footnotesize (3) division-specific time effects no controls}\\
+\multicolumn{4}{l}{\footnotesize (4) division-specific time effects with controls}\\
+\multicolumn{4}{l}{\footnotesize \textit{* p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}}\\
+\end{tabular}
+}

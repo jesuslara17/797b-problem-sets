@@ -62,27 +62,27 @@ g lnMW = ln(minwage)
 egen d_div_time = group(post division) // The variable d_div_time assigns the same value to a division interacted with time
 
 // Estimation
-/*
-forvalues i=50(25)150 {
+
+foreach i of varlist I50 I75 I100 I125 I150 {
 
 // (1) DID regression estimations without covariates
 
 
-quiet areg I`i' lnMW post, cluster(state) absorb(state)
+quiet areg `i' lnMW post, cluster(state) absorb(state)
 eststo 
 
 
 // (2) With covariates
 
 
-quiet areg I`i' lnMW post age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state)
+quiet areg `i' lnMW post age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state)
 eststo 
 
 
 // (3) Div without controls
 
 
-quiet areg I`i'  lnMW  post i.d_div_time , cluster(state) absorb(state) 
+quiet areg `i'  lnMW  post i.d_div_time , cluster(state) absorb(state) 
 eststo 
 
 
@@ -90,22 +90,25 @@ eststo
 // (4) Div with controls 
 
 
-quiet areg I`i'  lnMW  post i.d_div_time  age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state) 
+quiet areg `i'  lnMW  post i.d_div_time  age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state) 
 eststo 
 
-	if `i'==50{
-		esttab using 1a.tex, replace keep(lnMW) label nodep  nonotes se noeqlines noobs collabels(none) mtitles(" " " " " " " ") title(Minimum Wage Difference in Difference\label{auto}) b(4)
-		}
-	if `i'==150{
-		esttab using 1a.tex, append keep(lnMW) nodep nonum nonotes se noeqlines mlabels(none) collabels(none) label addnotes("\textit{Notes:} State-cluster-robust standard error in parentheses." "Dependent variable is log(Min Wage)." "(1) state and year fixed effects no contorls." "(2) state and year fixed effects with controls" "(3) division-specific time effects no controls" "(4) division-specific time effects with controls" "\textit{* p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}") b(4)
-			}
-	else {
-		esttab using 1a.tex, append keep(lnMW) nodep nonum nonotes se noeqlines noobs mlabels(none) collabels(none) label b(4)
+	if `i'==I50 {
+		esttab using T1A.tex, replace keep(lnMW) label nodep  nonotes se noeqlines noobs collabels(none) mtitles(" " " " " " " ") title(Minimum Wage Difference in Difference\label{auto}) b(4)
 		}
 
+else{
+		
+	if `i'==I150 {
+		esttab using T1A.tex, append keep(lnMW) nodep nonum nonotes se noeqlines mlabels(none) collabels(none) label addnotes("\textit{Notes:} State-cluster-robust standard error in parentheses." "Dependent variable is log(Min Wage)." "(1) state and year fixed effects no contorls." "(2) state and year fixed effects with controls" "(3) division-specific time effects no controls" "(4) division-specific time effects with controls" "\textit{* p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}") b(4)
+			}
+else {
+
+esttab using T1A.tex, append keep(lnMW) nodep nonum nonotes se noeqlines noobs mlabels(none) collabels(none) label b(4)
+		}
+}
 }
 
-*/
 // Correct problem with table
 
 ** 1A iv) **
@@ -366,7 +369,7 @@ restore
 
 xtset quarterdate statenum
 
-
+*doesn't work yet
 local placebolist "1 2 4 5 8 10 12 13 16 17 18 20 21 22 24 26 28 29 30 31 32 34 35 36 37 39 40 45 46 47 48 49 51 54 56" 
 
 foreach i in `placebolist'{
