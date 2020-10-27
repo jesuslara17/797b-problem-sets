@@ -63,51 +63,55 @@ egen d_div_time = group(post division) // The variable d_div_time assigns the sa
 
 // Estimation
 
-foreach i of varlist I50 I75 I100 I125 I150 {
+foreach i of numlist 50 75 100 125 150 {
 
 // (1) DID regression estimations without covariates
-
-
-quiet areg `i' lnMW post, cluster(state) absorb(state)
-eststo 
-
+quiet areg I`i' lnMW post, cluster(state) absorb(state)
+eststo  I`i'1
 
 // (2) With covariates
-
-
-quiet areg `i' lnMW post age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state)
-eststo 
+quiet areg I`i' lnMW post age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state)
+eststo I`i'2
 
 
 // (3) Div without controls
-
-
-quiet areg `i'  lnMW  post i.d_div_time , cluster(state) absorb(state) 
-eststo 
-
-
+quiet areg I`i'  lnMW  post i.d_div_time , cluster(state) absorb(state) 
+eststo I`i'3
 
 // (4) Div with controls 
+quiet areg I`i'  lnMW  post i.d_div_time  age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state) 
+eststo I`i'4
 
+if `i'== 50 {
 
-quiet areg `i'  lnMW  post i.d_div_time  age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state) 
-eststo 
-
-	if `i'==I50 {
-		esttab using T1A.tex, replace keep(lnMW) label nodep  nonotes se noeqlines noobs collabels(none) mtitles(" " " " " " " ") title(Minimum Wage Difference in Difference\label{auto}) b(4)
-		}
+esttab  I`i'1 I`i'2 I`i'3 I`i'4  using jeje3.tex, replace ty keep(lnMW) varlabels(lnMW " Income $ < 50\% $ Poverty Line ") nonum se noobs nonotes mlabels("(1)" "(2)" "(3)" "(4)") b(4) fragment
+}
 
 else{
-		
-	if `i'==I150 {
-		esttab using T1A.tex, append keep(lnMW) nodep nonum nonotes se noeqlines mlabels(none) collabels(none) label addnotes("\textit{Notes:} State-cluster-robust standard error in parentheses." "Dependent variable is log(Min Wage)." "(1) state and year fixed effects no contorls." "(2) state and year fixed effects with controls" "(3) division-specific time effects no controls" "(4) division-specific time effects with controls" "\textit{* p $<$ 0.05, ** p $<$ 0.01, *** p $<$ 0.001}") b(4)
-			}
-else {
 
-esttab using T1A.tex, append keep(lnMW) nodep nonum nonotes se noeqlines noobs mlabels(none) collabels(none) label b(4)
-		}
+esttab I`i'1 I`i'2 I`i'3 I`i'4  using jeje3.tex, append ty keep(lnMW) varlabels(lnMW "Income $ < `i'\% $ Poverty Line") nonum se noobs nonotes  mlabels(none)  b(4) fragment
+
 }
 }
+
+/* When adding this to Latex: 
+
+
+\begin{table}[htbp]\centering
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\caption{"Title pf the Tavble" \label{auto}}
+\begin{tabular}{l*{4}{c}}
+\hline\hline
+\input{tables:figures/jeje3}
+\hline\hline
+\multicolumn{5}{l}{\footnotesize "Explanation of the 4 different models"}\\
+\end{tabular}
+\end{table}
+
+It works!
+<3
+
+*/ 
 
 // Correct problem with table
 
@@ -154,7 +158,7 @@ forvalues `i'= 25(25)250 {
 replace cutoffs=`i' if I`i'==1
 }
 
-kdensity poverty, gen(x d) at(25,50,75,100,125,150,175,200,225,250)
+//kdensity poverty, gen(x d) at(25,50,75,100,125,150,175,200,225,250)
 
 ** 1B iii) **
 
