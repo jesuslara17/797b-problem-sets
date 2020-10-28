@@ -18,6 +18,7 @@ use pointonepctsampleE, clear
 
 //Define the 5 binary outcomes
 
+
 foreach j of numlist    50 75 100 125 150  {
 	cap drop I`j'
 	g I`j' = poverty<`j'
@@ -58,6 +59,7 @@ g lnMW = ln(minwage)
 
 // Now including division-specific effects
 
+global X "age i.sex i.married i.racesingd i.citizen hieduc"
 
 egen d_div_time = group(post division) // The variable d_div_time assigns the same value to a division interacted with time
 
@@ -75,11 +77,11 @@ eststo I`i'2
 
 
 // (3) Div without controls
-quiet areg I`i'  lnMW  post i.d_div_time , cluster(state) absorb(state) 
+quiet areg I`i'  lnMW  i.d_div_time $X, cluster(state) absorb(state) 
 eststo I`i'3
 
 // (4) Div with controls 
-quiet areg I`i'  lnMW  post i.d_div_time  age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state) 
+quiet areg I`i'  lnMW  i.d_div_time  $X, cluster(state) absorb(state) 
 eststo I`i'4
 
 if `i'== 50 {
@@ -94,12 +96,15 @@ esttab I`i'1 I`i'2 I`i'3 I`i'4  using jeje3.tex, append ty keep(lnMW) varlabels(
 }
 }
 
+
+
+** 1A iv) ** Make table:
 /* When adding this to Latex: 
 
 
 \begin{table}[htbp]\centering
 \def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
-\caption{"Title pf the Tavble" \label{auto}}
+\caption{"Title of the Table" \label{auto}}
 \begin{tabular}{l*{4}{c}}
 \hline\hline
 \input{tables:figures/jeje3}
@@ -112,16 +117,6 @@ It works!
 <3
 
 */ 
-
-// Correct problem with table
-
-** 1A iv) **
-
-
-
-
-//Make the table here
-
 
 
 ** PART 1B **
@@ -136,13 +131,13 @@ foreach j of numlist    25(25)250  {
 }
 
 foreach i of varlist I*{
-areg `i'  lnMW  post i.d_div_time  age i.sex i.married i.racesingd i.citizen hieduc, cluster(state) absorb(state)
-sca bMW_`i'=_b[post] 
-sca sebMW_`i'=_se[post]
+areg `i' i.d_div_time lnMW  $X, absorb(statefips) cluster(state)
+sca bMW_`i'=_b[lnMW] 
+sca sebMW_`i'=_se[lnMW]
 eststo r`i'
 }
 
-coefplot (rI25 \ rI50 \ rI75\ rI100\ rI125 \ rI150 \rI175\ rI200\ rI225\ rI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0)
+coefplot (rI25 \ rI50 \ rI75\ rI100\ rI125 \ rI150 \rI175\ rI200\ rI225\ rI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) 
 
 graph export "1B.png", as(png) replace
 
@@ -152,17 +147,46 @@ graph export "1B.png", as(png) replace
 
 /// Own calculations
 
+cap drop cutoffs
 gen cutoffs=.
-forvalues `i'= 25(25)250 {
 
-replace cutoffs=`i' if I`i'==1
+forvalues i= 1/10 {
+quietly replace cutoffs= 25*`i' in `i'
 }
 
-//kdensity poverty, gen(x d) at(25,50,75,100,125,150,175,200,225,250)
+cap drop x
+cap drop d
+kdensity poverty, gen(x d) at(cutoffs) // Obtain the pdf at the cutoffs
+
+cap drop bq // Coefficients obtained by OLS
+gen bq=. 
+forvalues i=25(25)250{
+
+quiet replace bq=bMW_I`i' if cutoffs==`i'
+}
+
+cap drop b_upe
+gen b_upe= bq/(-1*d)  //  b_upe are my own calculations 
+// Now with the package rifreg 
 
 ** 1B iii) **
 
+su poverty
+sca N=r(N)
+forvalues i=25(25)250{
+quiet su I`i' if poverty<`i' & poverty!=.
+local quant = round(r(N)/N, 0.01) 
 
+xi: rifreg poverty lnMW  i.d_div_time i.statefips $X, q(`quant')
+sca brif_`i'=_b[lnMW]
+eststo RI`i'
+
+}
+
+gen brif=.
+forvalues i=25(25)250{
+quiet replace brif=brif_`i' if cutoffs==`i'
+}
 
 
 **** PROBLEM ****

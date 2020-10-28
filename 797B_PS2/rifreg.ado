@@ -1,8 +1,4 @@
-cd "C:\Users\User\Documents\GitHub\797b-problem-sets\797B_PS2"
-
-
 *! rifreg version 0.1.1  Sept12-07, Mike Gevaert
-cap program drop rifreg
 program rifreg, eclass sort byable(recall) //sort prop(sw)
    version 9, missing
    syntax [varlist] [if] [in] [aw fw iw] [, ///
@@ -296,7 +292,6 @@ program rifreg, eclass sort byable(recall) //sort prop(sw)
    RIF_out `level'
 end
 
-cap program drop RIF_out
 program RIF_out
   args level
   loc tss  = e(rss)  + e(mss)
@@ -328,7 +323,6 @@ end
 
 //from stderr_reg.do
 //augmented to use weights, as described by stderr_wgt_reg.do
-cap program drop useEstWgts
 program useEstWgts
    args	        ///
       y	        /// dependent var
@@ -452,7 +446,6 @@ program useEstWgts
    _estimates unhold `esthold'
 end
 
-cap program drop variance
 program variance
    args	        ///
       rifvar    /// 
@@ -468,7 +461,6 @@ program variance
    qui reg `rifvar' `rest' [`weightexp'] if `touse'
 end
 
-cap program drop gini
 program gini, eclass sort
    args	        ///
       rifgini   ///
@@ -507,7 +499,6 @@ program gini, eclass sort
 
 end
 
-cap program drop genRIF
 program genRIF
    args          ///
       width      ///
@@ -553,7 +544,6 @@ program genRIF
 end
 
 //small program to perform bootstrap
-cap program drop doBootstrap
 program doBootstrap, eclass
    args title /// title of the bootstrap, displayed to user
         reps  /// number of repetitions
