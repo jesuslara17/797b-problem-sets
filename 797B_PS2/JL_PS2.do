@@ -123,8 +123,7 @@ It works!
 *************
 
 ** 1B i) **
-
-
+eststo clear
 foreach j of numlist    25(25)250  {
 	cap drop I`j'
 	g I`j' = poverty<`j'
@@ -137,9 +136,11 @@ sca sebMW_`i'=_se[lnMW]
 eststo r`i'
 }
 
-coefplot (rI25 \ rI50 \ rI75\ rI100\ rI125 \ rI150 \rI175\ rI200\ rI225\ rI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) 
+coefplot rI*, vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Conditional quantile partial effects") nolabel
 
-graph export "1B.png", as(png) replace
+
+coefplot (rI25 \ rI50 \ rI75\ rI100\ rI125 \ rI150 \rI175\ rI200\ rI225\ rI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Conditional quantile partial effects")
+graph export "1Bi.png", as(png) replace
 
 
 
@@ -169,7 +170,7 @@ cap drop b_upe
 gen b_upe= bq/(-1*d)  //  b_upe are my own calculations 
 // Now with the package rifreg 
 
-** 1B iii) **
+** 1B ii) **
 
 su poverty
 sca N=r(N)
@@ -183,10 +184,28 @@ eststo RI`i'
 
 }
 
+cap drop brif
 gen brif=.
 forvalues i=25(25)250{
 quiet replace brif=brif_`i' if cutoffs==`i'
 }
+
+coefplot (RI25 \ RI50 \ RI75\ RI100\ RI125 \ RI150 \RI175\ RI200\ RI225\ RI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Unconditional quantile partial effects")
+graph export "1Bii.png", as(png) replace
+
+mkmat d bq b_upe brif if d!=., mat(Table_1Bii) 
+mat list Table_1Bii
+mat colnames Table_1Bii= "PDF" "Conditional" "Own Calculations" "Rifreg"
+
+mat rownames Table_1Bii= "25" "50" "75" "100" "125" "150" "175" "200" "225" "250"
+
+
+esttab m(Table_1Bii,fmt(%9.4f)) using "Table_1Bii.tex", replace title(Conditional and unconditional qunatile partial effects) nomtitles booktabs
+
+
+
+// Make table to present my results
+
 
 
 **** PROBLEM ****
