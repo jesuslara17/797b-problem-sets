@@ -24,9 +24,7 @@ foreach j of numlist    50 75 100 125 150  {
 	g I`j' = poverty<`j'
 }
 
-
 ** 1A i) **  // DID regression without covariates
-
 
 g post = year==2006 // Generates a dummy equal to 1 if year is 2006. Including it= time effects
 g lnMW = ln(minwage) 
@@ -96,8 +94,6 @@ esttab I`i'1 I`i'2 I`i'3 I`i'4  using jeje3.tex, append ty keep(lnMW) varlabels(
 }
 }
 
-
-
 ** 1A iv) ** Make table:
 /* When adding this to Latex: 
 
@@ -118,7 +114,6 @@ It works!
 
 */ 
 
-
 ** PART 1B **
 *************
 
@@ -138,10 +133,12 @@ eststo r`i'
 
 coefplot rI*, vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Conditional quantile partial effects") nolabel
 
-
 coefplot (rI25 \ rI50 \ rI75\ rI100\ rI125 \ rI150 \rI175\ rI200\ rI225\ rI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Conditional quantile partial effects")
 graph export "1Bi.png", as(png) replace
 
+//recast ciops 
+// mat b with estimates 
+// ciopts(recast(rarea) color(gs13))
 
 
 ** 1B ii) **
@@ -196,13 +193,10 @@ graph export "1Bii.png", as(png) replace
 mkmat d bq b_upe brif if d!=., mat(Table_1Bii) 
 mat list Table_1Bii
 mat colnames Table_1Bii= "PDF" "Conditional" "Own Calculations" "Rifreg"
-
 mat rownames Table_1Bii= "25" "50" "75" "100" "125" "150" "175" "200" "225" "250"
 
 
 esttab m(Table_1Bii,fmt(%9.4f)) using "Table_1Bii.tex", replace title(Conditional and unconditional qunatile partial effects) nomtitles booktabs
-
-
 
 // Make table to present my results
 
@@ -241,7 +235,6 @@ forvalues i=`min'/`max'{
 //California is num 6
 drop if donor!=1& stateabb!="CA"
 
-egen statenum2=group(statenum)
 // Treatment variables
 gen post=0
 	replace post=1 if(time>=1988.75)
@@ -253,10 +246,6 @@ gen CA_post=post*CA
 //Gen logs of dependent variables
 gen overall_logemp = ln(overall_emp) 
 gen teen_logemp=log(teen_emp)
-
-
-
-
 
 // Our 4 outcome variables: teen_logwage, overall_logwage, overall_logemp, teen_logemp
 g period_4q = floor((quarterdate-114)/4)
@@ -275,10 +264,8 @@ graph export "2Ai`var'.png", as(png) replace
 restore
 }
 
-
 //DD regressions
 xtset statenum quarterdate
-
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 	xtreg `var' CA_post i.quarterdate, fe robust
@@ -292,10 +279,7 @@ esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("log(teen wag
 
 //What happens if we control for pre-existing linear and cuadratic trends?
 
-
-
 ** 2A iii) **
-
 //Propensity Score Reweighting
 //Own calculations
 //teffects ipw
@@ -303,18 +287,12 @@ esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("log(teen wag
 ** 2A iv) **
 
 
-
 ** PART 2B **
 *************
 
 // Synthetic controls
 
-
 ** 2B i) **
-
-
-
-
 //Method one: All quarterly pretreatment outcomes
  
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
@@ -331,10 +309,9 @@ synth `var' ///
 preserve
 
 use spec1_`var', clear 
+gen CA_diff_`var'=_Y_synthetic-_Y_treated
 rename _W_Weight s1w_`var'
 sa spec1_`var', replace 
-
-
 
 gen period_4q = floor((_time-114)/4)
 collapse (mean) _Y_treated (mean) _Y_synthetic, by(period_4q)
@@ -349,12 +326,7 @@ graph export "2Bi`var'dif_spec1.png", as(png) replace
 restore 
 }
 
-
-
-
 //Method two: All quarterly pretreatment outcomes
-
-
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 
 synth `var' `var'(92(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(6) trperiod(114) keep("spec2_`var'.dta", replace)
@@ -363,6 +335,7 @@ preserve
 
 use spec2_`var', clear 
 rename _W_Weight s2w_`var'
+gen CA_diff_`var'=_Y_synthetic-_Y_treated
 sa spec2_`var', replace 
 
 gen period_4q = floor((_time-114)/4)
@@ -395,50 +368,106 @@ merge 1:1 _Co_Number using spec1_teen_logemp, nogen
 merge 1:1 _Co_Number using spec2_teen_logemp, nogen
 drop _time _Y_treated _Y_synthetic
 
-
 mkmat _Co_Number s1w_overall_logwage s2w_overall_logwage s1w_teen_logwage s2w_teen_logwage, mat(Weights_Wage)
 
 mat colnames Weights_Wage ="State Number" "S1: Overall Wage" "S2: Overall Wage" "S1: Teen Wage" "S2: Teen Wage"  
-
 esttab m(Weights_Wage) using 2Bi_Weights_Wage.tex, replace title(Weights to Each State: Wage) nomtitles booktabs
-
 mkmat _Co_Number s1w_overall_logemp s2w_overall_logemp s1w_teen_logemp s2w_teen_logemp, mat(Weights_Emp)
-
 mat colnames Weights_Emp ="State Number" "S1: Overall Emp" "S2: Overall Emp" "S1: Teen Emp" "S2: Teen Emp" 
-
 esttab m(Weights_Emp) using 2Bi_Weights_Emp.tex, replace title(Weights to Each State: Employment) nomtitles booktabs
-
 restore 
 
-** 2B ii) **
+** 2B ii)  **
+
+// Get our estimates 
+
 
 ** 2B iii) **
+//Placebo synthetic controls
 
-xtset quarterdate statenum
+ //statenum2 was generated after sropping observations of non-donors ==> has no breaks and it is more adequate for loops over states
 
-*doesn't work yet
-local placebolist "1 2 4 5 8 10 12 13 16 17 18 20 21 22 24 26 28 29 30 31 32 34 35 36 37 39 40 45 46 47 48 49 51 54 56" 
+// SPECIFICATION 2
 
-foreach i in `placebolist'{
+
+save "emp_wage_data2biii.dta", replace // We will drop CA to facilitate loops but want to have this last version of the data for further exercises
+
+drop if statenum==6 //drop california
+egen statenum2=group(statenum) // list of donors without breaks 1-35
+
+xtset statenum2 quarterdate //necessary for synth
+
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+forvalues i=1/35 {
+quiet synth `var' `var'(92(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(`i') trperiod(114) keep("S2_`var'_`i'.dta", replace)
+preserve 
 
-quiet synth `var' `var'(92(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(`i') trperiod(114) keep("$dta2b/2_`var'_`i'.dta", replace)
-
-preserve
-
-use "$dta2b/2_`var'_`i'.dta", clear 
-gen dif_`var'_`i'=
-save "$dta2b/2_`var'_`i'.dta", replace
+use S2_`var'_`i'.dta, clear 
+gen diff_`i'=_Y_treated-_Y_synthetic   //gen diff, or gap
+keep diff_`i' _time                   //keep relevant variables
+save S2_`var'_`i', replace 
 restore 
 }
 }
 
-// PLACEBO SYNTHETIC CONTROLS
+// Merge Datasets of SC specification 2
+
+use emp_wage_data2biii.dta, clear
+
+preserve
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+forvalues i=1/35{
+
+if `i'==1{ 
+
+use  spec2_`var', clear // use our SC estimates for california 
+keep _time CA_diff_`var' // keep relevant veriables
+merge 1:1 _n using S2_`var'_`i', nogen  //merge with the SC estimates for state1
+}
+
+else {
+
+merge 1:1 _n using S2_`var'_`i', nogen // merge with the remaining 34 states
+drop if _time==.
+save "S2placebos_`var'.dta", replace 
+
+// Make diagram 
+
+//twoway line 
+}
+}
+}
+restore 
 
 
+line CA_diff_overall_logemp _time || line _time  diff_1,  scheme(s1color)
+
+
+
+
+//Generate plot
+
+forvalues i=i/36{
+twoway(line diff_ `i' _time), saving(experiment, replace)
+} 
+
+
+foreach var of varlist diff_1 diff_2 diff_3{
+
+twoway(line `var' _time), name(experiment_`var', replace)
+
+}
+
+
+twoway (line diff_1 _time), xline(114) scheme(s1color) xtitle(Quarterdate) 
+graph save experiment, replace
+graph use experiment
+
+
+twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
+graph save experi
 ** 2B iv) **
 
-** 2B v) **
-
+** 2B  v) **
 
 ** 2B vi) **
