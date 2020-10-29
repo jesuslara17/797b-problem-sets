@@ -390,11 +390,11 @@ restore
 // SPECIFICATION 2
 
 
+
 save "emp_wage_data2biii.dta", replace // We will drop CA to facilitate loops but want to have this last version of the data for further exercises
 
 drop if statenum==6 //drop california
 egen statenum2=group(statenum) // list of donors without breaks 1-35
-
 xtset statenum2 quarterdate //necessary for synth
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
@@ -412,7 +412,6 @@ restore
 
 // Merge Datasets of SC specification 2
 
-use emp_wage_data2biii.dta, clear
 
 preserve
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
@@ -425,47 +424,81 @@ keep _time CA_diff_`var' // keep relevant veriables
 merge 1:1 _n using S2_`var'_`i', nogen  //merge with the SC estimates for state1
 }
 
-else {
 
+if `i'==35 {
 merge 1:1 _n using S2_`var'_`i', nogen // merge with the remaining 34 states
 drop if _time==.
 save "S2placebos_`var'.dta", replace 
+// Make diagram // MORE FORMATTING NEEDED!
+line diff_1 _time, lcolor(dimgray)  || line diff_2 _time, lcolor(dimgray) || line diff_3 _time, lcolor(dimgray) || line diff_4 _time, lcolor(dimgray) || line diff_5 _time, lcolor(dimgray) || line diff_6 _time, lcolor(dimgray) || line diff_7 _time, lcolor(dimgray) || line diff_8 _time, lcolor(dimgray) || line diff_9 _time, lcolor(dimgray) || line diff_10 _time, lcolor(dimgray) || line diff_11 _time, lcolor(dimgray) || line diff_12 _time, lcolor(dimgray) || line diff_13 _time, lcolor(dimgray) || line diff_14 _time, lcolor(dimgray) || line diff_15 _time, lcolor(dimgray) || line diff_16 _time, lcolor(dimgray) || line diff_17 _time, lcolor(dimgray) || line diff_18 _time, lcolor(dimgray)  || line diff_19 _time, lcolor(dimgray)|| line diff_20 _time, lcolor(dimgray) || line diff_21 _time, lcolor(dimgray) || line diff_22 _time, lcolor(dimgray)  || line diff_23 _time, lcolor(dimgray) || line diff_24 _time, lcolor(dimgray) || line diff_25 _time, lcolor(dimgray) || line diff_26 _time, lcolor(dimgray) || line diff_27 _time, lcolor(dimgray) || line diff_28 _time, lcolor(dimgray) || line diff_29 _time, lcolor(dimgray) || line diff_30 _time, lcolor(dimgray) || line diff_31 _time, lcolor(dimgray) || line diff_32 _time, lcolor(dimgray) || line diff_33 _time, lcolor(dimgray) || line diff_34 _time, lcolor(dimgray) || line diff_35 _time, lcolor(dimgray) ||line CA_diff_`var' _time, lwidth (medthick) xtitle("Time") ytitle("Gap synthetic-real") lcolor(black) scheme(s1color) legend(off) yline(0) xline(114) title("GAP Synthetic and Real, CA vs Donor states:`var'")
 
-// Make diagram 
+graph export "2Biii_ S2_`var'.png", as(png) replace
+}
+else {
 
-//twoway line 
+merge 1:1 _n using S2_`var'_`i', nogen  //merge with the SC estimates for state1
 }
 }
 }
 restore 
 
 
-line CA_diff_overall_logemp _time || line _time  diff_1,  scheme(s1color)
+// Placebo SPECIFICATION 1 
+xtset statenum2 quarterdate 
+
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+forvalues i=1/35 {
+quiet synth `var' `var'(92) `var'(93) `var'(94) `var'(95) `var'(96) ///
+`var'(97) `var'(98) `var'(99) `var'(100) ///
+`var'(101) `var'(102) `var'(103) ///
+`var'(104) `var'(105) `var'(106) `var'(107) /// 
+`var'(108) `var'(109) `var'(110) `var'(111) ///
+`var'(112) `var'(113), trunit(`i') trperiod(114) keep("S1_`var'_`i'.dta", replace)
+
+preserve 
+use S1_`var'_`i'.dta, clear 
+gen diff_`i'=_Y_treated-_Y_synthetic   //gen diff, or gap
+keep diff_`i' _time                   //keep relevant variables
+save S1_`var'_`i', replace 
+restore 
+}
+}
+
+// Merge Datasets of SC specification 1
 
 
+preserve
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+forvalues i=1/35{
 
+if `i'==1{ 
 
-//Generate plot
-
-forvalues i=i/36{
-twoway(line diff_ `i' _time), saving(experiment, replace)
-} 
-
-
-foreach var of varlist diff_1 diff_2 diff_3{
-
-twoway(line `var' _time), name(experiment_`var', replace)
-
+use  spec1_`var', clear // use our SC estimates for california 
+keep _time CA_diff_`var' // keep relevant veriables
+merge 1:1 _n using S1_`var'_`i', nogen  //merge with the SC estimates for state1
 }
 
 
-twoway (line diff_1 _time), xline(114) scheme(s1color) xtitle(Quarterdate) 
-graph save experiment, replace
-graph use experiment
+if `i'==35 {
+merge 1:1 _n using S1_`var'_`i', nogen // merge with the remaining 34 states
+drop if _time==.
+save "S1placebos_`var'.dta", replace 
+// Make diagram // MORE FORMATTING NEEDED!
+line diff_1 _time, lcolor(dimgray)  || line diff_2 _time, lcolor(dimgray) || line diff_3 _time, lcolor(dimgray) || line diff_4 _time, lcolor(dimgray) || line diff_5 _time, lcolor(dimgray) || line diff_6 _time, lcolor(dimgray) || line diff_7 _time, lcolor(dimgray) || line diff_8 _time, lcolor(dimgray) || line diff_9 _time, lcolor(dimgray) || line diff_10 _time, lcolor(dimgray) || line diff_11 _time, lcolor(dimgray) || line diff_12 _time, lcolor(dimgray) || line diff_13 _time, lcolor(dimgray) || line diff_14 _time, lcolor(dimgray) || line diff_15 _time, lcolor(dimgray) || line diff_16 _time, lcolor(dimgray) || line diff_17 _time, lcolor(dimgray) || line diff_18 _time, lcolor(dimgray)  || line diff_19 _time, lcolor(dimgray)|| line diff_20 _time, lcolor(dimgray) || line diff_21 _time, lcolor(dimgray) || line diff_22 _time, lcolor(dimgray)  || line diff_23 _time, lcolor(dimgray) || line diff_24 _time, lcolor(dimgray) || line diff_25 _time, lcolor(dimgray) || line diff_26 _time, lcolor(dimgray) || line diff_27 _time, lcolor(dimgray) || line diff_28 _time, lcolor(dimgray) || line diff_29 _time, lcolor(dimgray) || line diff_30 _time, lcolor(dimgray) || line diff_31 _time, lcolor(dimgray) || line diff_32 _time, lcolor(dimgray) || line diff_33 _time, lcolor(dimgray) || line diff_34 _time, lcolor(dimgray) || line diff_35 _time, lcolor(dimgray) ||line CA_diff_`var' _time, lwidth (medthick) xtitle("Time") ytitle("Gap synthetic-real") lcolor(black) scheme(s1color) legend(off) yline(0) xline(114) title("GAP Synthetic and Real, CA vs Donor states:`var'")
+
+graph export "2Biii_ S1_`var'.png", as(png) replace
+}
+else {
+
+merge 1:1 _n using S1_`var'_`i', nogen  //merge with the SC estimates for state1
+}
+}
+}
+restore 
 
 
-twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
-graph save experi
+
+
 ** 2B iv) **
 
 ** 2B  v) **
