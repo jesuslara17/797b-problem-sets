@@ -367,13 +367,43 @@ merge 1:1 _Co_Number using spec2_overall_logemp, nogen
 merge 1:1 _Co_Number using spec1_teen_logemp, nogen
 merge 1:1 _Co_Number using spec2_teen_logemp, nogen
 drop _time _Y_treated _Y_synthetic
+rename _Co_Number statenum
 
-mkmat _Co_Number s1w_overall_logwage s2w_overall_logwage s1w_teen_logwage s2w_teen_logwage, mat(Weights_Wage)
+/*
+save "weights.dta", replace 
+
+use emp_wage_data, clear
+keep if quarterdate==100
+keep statenum stateabb 
+joinby statenum using "C:\Users\User\Documents\GitHub\797b-problem-sets\797B_PS2\weights.dta", unmatched(master) _merge(_merge)
+drop if s1w_overall_logwage==.
+drop _merge
+
+
+drop CA_diff* statenum
+rename stateabb State
+rename s1w_overall_logemp S1_Overall_Emp
+rename s1w_overall_logwage S1_Overall_Wage
+rename s2w_overall_logemp S2_Overall_Emp
+rename s2w_overall_logwage S2_Overall_Wage
+rename s1w_teen_logemp S1_Teen_Emp
+rename s1w_teen_logwage S1_Teen_Wage
+rename s2w_teen_logemp S2_Teen_Emp
+rename s2w_teen_logwage S2_Teen_Wage
+
+dataout, save(Weights_Complete.tex) tex replace fragment
+*/
+
+mkmat statenum s1w_overall_logwage s2w_overall_logwage s1w_teen_logwage s2w_teen_logwage, mat(Weights_Wage)
 
 mat colnames Weights_Wage ="State Number" "S1: Overall Wage" "S2: Overall Wage" "S1: Teen Wage" "S2: Teen Wage"  
+mat rownames Weights_Wage=stateabb
 esttab m(Weights_Wage) using 2Bi_Weights_Wage.tex, replace title(Weights to Each State: Wage) nomtitles booktabs
-mkmat _Co_Number s1w_overall_logemp s2w_overall_logemp s1w_teen_logemp s2w_teen_logemp, mat(Weights_Emp)
-mat colnames Weights_Emp ="State Number" "S1: Overall Emp" "S2: Overall Emp" "S1: Teen Emp" "S2: Teen Emp" 
+
+mkmat statenum s1w_overall_logemp s2w_overall_logemp s1w_teen_logemp s2w_teen_logemp, mat(Weights_Emp)
+mat colnames Weights_Emp ="State Number" "S1: Overall Emp" "S2: Overall Emp" "S1: Teen Emp" "S2: Teen Emp"
+mat rownames Weights_Emp= stateabb
+
 esttab m(Weights_Emp) using 2Bi_Weights_Emp.tex, replace title(Weights to Each State: Employment) nomtitles booktabs
 restore 
 
@@ -429,6 +459,7 @@ if `i'==35 {
 merge 1:1 _n using S2_`var'_`i', nogen // merge with the remaining 34 states
 drop if _time==.
 save "S2placebos_`var'.dta", replace 
+
 // Make diagram // MORE FORMATTING NEEDED!
 line diff_1 _time, lcolor(dimgray)  || line diff_2 _time, lcolor(dimgray) || line diff_3 _time, lcolor(dimgray) || line diff_4 _time, lcolor(dimgray) || line diff_5 _time, lcolor(dimgray) || line diff_6 _time, lcolor(dimgray) || line diff_7 _time, lcolor(dimgray) || line diff_8 _time, lcolor(dimgray) || line diff_9 _time, lcolor(dimgray) || line diff_10 _time, lcolor(dimgray) || line diff_11 _time, lcolor(dimgray) || line diff_12 _time, lcolor(dimgray) || line diff_13 _time, lcolor(dimgray) || line diff_14 _time, lcolor(dimgray) || line diff_15 _time, lcolor(dimgray) || line diff_16 _time, lcolor(dimgray) || line diff_17 _time, lcolor(dimgray) || line diff_18 _time, lcolor(dimgray)  || line diff_19 _time, lcolor(dimgray)|| line diff_20 _time, lcolor(dimgray) || line diff_21 _time, lcolor(dimgray) || line diff_22 _time, lcolor(dimgray)  || line diff_23 _time, lcolor(dimgray) || line diff_24 _time, lcolor(dimgray) || line diff_25 _time, lcolor(dimgray) || line diff_26 _time, lcolor(dimgray) || line diff_27 _time, lcolor(dimgray) || line diff_28 _time, lcolor(dimgray) || line diff_29 _time, lcolor(dimgray) || line diff_30 _time, lcolor(dimgray) || line diff_31 _time, lcolor(dimgray) || line diff_32 _time, lcolor(dimgray) || line diff_33 _time, lcolor(dimgray) || line diff_34 _time, lcolor(dimgray) || line diff_35 _time, lcolor(dimgray) ||line CA_diff_`var' _time, lwidth (medthick) xtitle("Time") ytitle("Gap synthetic-real") lcolor(black) scheme(s1color) legend(off) yline(0) xline(114) title("GAP Synthetic and Real, CA vs Donor states:`var'")
 
@@ -483,6 +514,7 @@ if `i'==35 {
 merge 1:1 _n using S1_`var'_`i', nogen // merge with the remaining 34 states
 drop if _time==.
 save "S1placebos_`var'.dta", replace 
+
 // Make diagram // MORE FORMATTING NEEDED!
 line diff_1 _time, lcolor(dimgray)  || line diff_2 _time, lcolor(dimgray) || line diff_3 _time, lcolor(dimgray) || line diff_4 _time, lcolor(dimgray) || line diff_5 _time, lcolor(dimgray) || line diff_6 _time, lcolor(dimgray) || line diff_7 _time, lcolor(dimgray) || line diff_8 _time, lcolor(dimgray) || line diff_9 _time, lcolor(dimgray) || line diff_10 _time, lcolor(dimgray) || line diff_11 _time, lcolor(dimgray) || line diff_12 _time, lcolor(dimgray) || line diff_13 _time, lcolor(dimgray) || line diff_14 _time, lcolor(dimgray) || line diff_15 _time, lcolor(dimgray) || line diff_16 _time, lcolor(dimgray) || line diff_17 _time, lcolor(dimgray) || line diff_18 _time, lcolor(dimgray)  || line diff_19 _time, lcolor(dimgray)|| line diff_20 _time, lcolor(dimgray) || line diff_21 _time, lcolor(dimgray) || line diff_22 _time, lcolor(dimgray)  || line diff_23 _time, lcolor(dimgray) || line diff_24 _time, lcolor(dimgray) || line diff_25 _time, lcolor(dimgray) || line diff_26 _time, lcolor(dimgray) || line diff_27 _time, lcolor(dimgray) || line diff_28 _time, lcolor(dimgray) || line diff_29 _time, lcolor(dimgray) || line diff_30 _time, lcolor(dimgray) || line diff_31 _time, lcolor(dimgray) || line diff_32 _time, lcolor(dimgray) || line diff_33 _time, lcolor(dimgray) || line diff_34 _time, lcolor(dimgray) || line diff_35 _time, lcolor(dimgray) ||line CA_diff_`var' _time, lwidth (medthick) xtitle("Time") ytitle("Gap synthetic-real") lcolor(black) scheme(s1color) legend(off) yline(0) xline(114) title("GAP Synthetic and Real, CA vs Donor states:`var'")
 
