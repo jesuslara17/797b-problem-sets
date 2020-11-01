@@ -130,10 +130,12 @@ sca bMW_`i'=_b[lnMW]
 sca sebMW_`i'=_se[lnMW]
 eststo r`i'
 }
+*coefplot rI*, ciopts(recast(rarea) color(gs13)) vertical keep(lnMW) swapnames scheme(s1color) yline(0) title ("Conditional quantile partial effects") nolabel
 
-coefplot rI*, vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Conditional quantile partial effects") nolabel
+*coefplot rI*, ciopts(recast(rarea)) vertical keep(lnMW) swapnames scheme(s1color) yline(0) title ("Conditional quantile partial effects") nolabel
 
-coefplot (rI25 \ rI50 \ rI75\ rI100\ rI125 \ rI150 \rI175\ rI200\ rI225\ rI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Conditional quantile partial effects")
+coefplot (rI25 \ rI50 \ rI75\ rI100\ rI125 \ rI150 \rI175\ rI200\ rI225\ rI250), vertical keep(lnMW)  aseq swapnames scheme(s1color)  title ("Conditional quantile partial effects") ciopts(recast(rarea) color(gs13))  recast(connected) yline(0) xtitle(Poverty Cutoffs) ytitle(Estimated lnMW coefficient)
+
 graph export "1Bi.png", as(png) replace
 
 //recast ciops 
@@ -187,7 +189,8 @@ forvalues i=25(25)250{
 quiet replace brif=brif_`i' if cutoffs==`i'
 }
 
-coefplot (RI25 \ RI50 \ RI75\ RI100\ RI125 \ RI150 \RI175\ RI200\ RI225\ RI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Unconditional quantile partial effects")
+coefplot (RI25 \ RI50 \ RI75\ RI100\ RI125 \ RI150 \RI175\ RI200\ RI225\ RI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Unconditional quantile partial effects") ciopts(recast(rarea) color(gs13)) recast(connected) xtitle(Poverty Cutoffs) ytitle(Estimated lnMW coefficient)
+
 graph export "1Bii.png", as(png) replace
 
 mkmat d bq b_upe brif if d!=., mat(Table_1Bii) 
@@ -240,6 +243,8 @@ gen post=0
 	replace post=1 if(time>=1988.75)
 gen CA=0
 	replace CA=1 if(stateabb=="CA")
+	
+// Make a dataset that we will use. to merge and get the labels associated to each statenum 
 
 gen CA_post=post*CA
 ** 2A i) **
@@ -256,16 +261,41 @@ foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 preserve 
 collapse (mean) `var', by(CA period_4q)
 
-twoway (connected `var' period_4q if CA==1)  ///
-(connected  `var' period_4q if CA==0), xline(0) scheme(s1color)  ///
-xtitle("Event Time") ///
+if "`var'"=="teen_logwage"{
+	local title ="Wage: Teen"
+	local ytitle= "log(wage)"
+	}
+	if "`var'"=="overall_logwage"{
+	local title ="Wage: Overall"
+	local ytitle="log(wage)"
+	}
+if "`var'"=="teen_logemp"{
+	local title ="Employment: Teen"
+	local ytitle="log(employment)"
+	}
 
+if "`var'"=="overall_logemp"{
+	local title ="Employment: Overall"
+	local ytitle="log(employment)"
+	}
+else{
+}
+
+
+twoway (connected `var' period_4q if CA==1)  ///
+(connected  `var' period_4q if CA==0, lcolor(blue) mcolor(blue)), xline(0, lcolor(black)) scheme(s1color)  xtitle("Event Time") ytitle(`ytitle') title(`title') legend(order(1 "CA" 2 "Donor states"))
 graph export "2Ai`var'.png", as(png) replace
 restore
 }
 
+
+
+
+
 //DD regressions
 xtset statenum quarterdate
+
+eststo clear
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 	xtreg `var' CA_post i.quarterdate, fe robust
@@ -273,7 +303,7 @@ foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 }
 
 //Personalize formating
-esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("log(teen wage)" "log(teen employ)" "log(overall wage)" "log(overall employ)") title(Overall Difference in Difference\label{auto}) b(3) coef(CA_post "diff-in-diff")	
+esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("Wage (Teen)" "Wage (Overall)" "Employment (Teen)" "Employment (Overall)") title(Overall Difference in Difference\label{auto}) b(3) coef(CA_post "diff-in-diff")	
 
 ** 2A ii) **
 
@@ -293,18 +323,18 @@ esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("log(teen wag
 // Synthetic controls
 
 ** 2B i) **
-//Method one: All quarterly pretreatment outcomes
+//S1: All quarterly pretreatment outcomes
  
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 
 synth `var' ///
-///`var'(88) `var'(89) `var'(90) `var'(91) /// 
+`var'(88) `var'(89) `var'(90) `var'(91) /// 
 `var'(92) `var'(93) `var'(94) `var'(95) `var'(96) ///
 `var'(97) `var'(98) `var'(99) `var'(100) ///
 `var'(101) `var'(102) `var'(103) ///
 `var'(104) `var'(105) `var'(106) `var'(107) /// 
 `var'(108) `var'(109) `var'(110) `var'(111) ///
-`var'(112) `var'(113), trunit(6) trperiod(114) keep("spec1_`var'.dta", replace)
+`var'(112) `var'(113), trunit(6) trperiod(114) keep("spec1_`var'.dta", replace) figure
 
 preserve
 
@@ -326,10 +356,10 @@ graph export "2Bi`var'dif_spec1.png", as(png) replace
 restore 
 }
 
-//Method two: All quarterly pretreatment outcomes
+//S2: All quarterly pretreatment outcomes
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 
-synth `var' `var'(92(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(6) trperiod(114) keep("spec2_`var'.dta", replace)
+synth `var' `var'(88(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(6) trperiod(114) keep("spec2_`var'.dta", replace)
 
 preserve
 
@@ -356,6 +386,36 @@ graph export "2Bi`var'dif_spec2.png", as(png) replace
 restore 
 }
 
+//GET ESTIMATES (alpha)
+preserve
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+use spec1_`var', clear
+drop if _time==.
+gen post=0
+replace post=1 if _time>114
+su CA_diff_`var' if post==1
+sca S1`var'=r(mean)
+}
+restore
+
+preserve
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+use spec2_`var', clear
+drop if _time==.
+gen post=0
+replace post=1 if _time>114
+su CA_diff_`var' if post==1
+sca S2`var'=r(mean)
+}
+restore
+
+mat SC_est = (S1teen_logwage, S1overall_logwage, S1teen_logemp, S1overall_logemp\ S2teen_logwage, S2overall_logwage, S2teen_logemp, S2overall_logemp)
+mat list SC_est
+mat rownames SC_est= "Specification 1" "Specification 2"
+mat colnames SC_est= " Wage (Teen)" "Wage (Overall)" "Employment (Teen)" "Employment (Overall)"
+esttab m(SC_est,fmt(%9.3f)) using "2BiiSC_Estimates.tex", replace title(Synthetic Controls Estimates) nomtitles booktabs
+
+
 // Make the table of weights 
 preserve 
 use spec1_overall_logwage, clear 
@@ -366,10 +426,16 @@ merge 1:1 _Co_Number using spec1_overall_logemp, nogen
 merge 1:1 _Co_Number using spec2_overall_logemp, nogen
 merge 1:1 _Co_Number using spec1_teen_logemp, nogen
 merge 1:1 _Co_Number using spec2_teen_logemp, nogen
-drop _time _Y_treated _Y_synthetic
+drop _time _Y_treated _Y_synthetic CA*
 rename _Co_Number statenum
+save "weights.dta",replace
+merge 1:1 statenum using statelabels, keepusing(stateabb) nogen
 
 /*
+listtab stateabb s1w_overall_logwage using weights_wage.tex, replace type
+listtex stateabb s2w_overall_logwage s1w_teen_logwage s2w_teen_logwage using 2biweights_wage.tex, replace 
+listtex stateabb s1w_overall_logemp s2w_overall_logemp s1w_teen_logemp s2w_teen_logemp using 2biweights_emp.tex,replace
+
 save "weights.dta", replace 
 
 use emp_wage_data, clear
@@ -397,22 +463,52 @@ dataout, save(Weights_Complete.tex) tex replace fragment
 mkmat statenum s1w_overall_logwage s2w_overall_logwage s1w_teen_logwage s2w_teen_logwage, mat(Weights_Wage)
 
 mat colnames Weights_Wage ="State Number" "S1: Overall Wage" "S2: Overall Wage" "S1: Teen Wage" "S2: Teen Wage"  
-mat rownames Weights_Wage=stateabb
+mat rownames Weights_Wage="AL" "AK" "AZ" "AR" "CO" "DE" "FL" "GA" "ID" "IL" "IN" "KS" "KY" "LA" "MD" "MI" "MS" "MO" "MT" "NE" "NV" "NJ" "NM" "NY" "NC" "OH" "OK" "SC" "SD" "TN" "TX" "UT" "VA" "WV" "WY"
 esttab m(Weights_Wage) using 2Bi_Weights_Wage.tex, replace title(Weights to Each State: Wage) nomtitles booktabs
 
 mkmat statenum s1w_overall_logemp s2w_overall_logemp s1w_teen_logemp s2w_teen_logemp, mat(Weights_Emp)
 mat colnames Weights_Emp ="State Number" "S1: Overall Emp" "S2: Overall Emp" "S1: Teen Emp" "S2: Teen Emp"
-mat rownames Weights_Emp= stateabb
+mat rownames Weights_Emp= "AL" "AK" "AZ" "AR" "CO" "DE" "FL" "GA" "ID" "IL" "IN" "KS" "KY" "LA" "MD" "MI" "MS" "MO" "MT" "NE" "NV" "NJ" "NM" "NY" "NC" "OH" "OK" "SC" "SD" "TN" "TX" "UT" "VA" "WV" "WY"
 
 esttab m(Weights_Emp) using 2Bi_Weights_Emp.tex, replace title(Weights to Each State: Employment) nomtitles booktabs
+
 restore 
 
 ** 2B ii)  **
 
-// Get our estimates 
+//GET ESTIMATES (alpha)
+preserve
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+use spec1_`var', clear
+drop if _time==.
+gen post=0
+replace post=1 if _time>114
+su CA_diff_`var' if post==1
+sca S1`var'=r(mean)
+}
+restore
+
+preserve
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+use spec2_`var', clear
+drop if _time==.
+gen post=0
+replace post=1 if _time>114
+su CA_diff_`var' if post==1
+sca S2`var'=r(mean)
+}
+restore
+
+mat SC_est = (S1teen_logwage, S1overall_logwage, S1teen_logemp, S1overall_logemp\ S2teen_logwage, S2overall_logwage, S2teen_logemp, S2overall_logemp)
+mat list SC_est
+mat rownames SC_est= "Specification 1 $\hat{\alpha}$" "Specification 2 $\hat{\alpha}$"
+mat colnames SC_est= " Wage (Teen)" "Wage (Overall)" "Employment (Teen)" "Employment (Overall)"
+esttab m(SC_est,fmt(%9.4f)) using "2BiiSC_Estimates.tex", replace title(Synthetic Controls Estimates) nomtitles booktabs
+
 
 
 ** 2B iii) **
+
 //Placebo synthetic controls
 
  //statenum2 was generated after sropping observations of non-donors ==> has no breaks and it is more adequate for loops over states
@@ -423,13 +519,22 @@ restore
 
 save "emp_wage_data2biii.dta", replace // We will drop CA to facilitate loops but want to have this last version of the data for further exercises
 
+
 drop if statenum==6 //drop california
 egen statenum2=group(statenum) // list of donors without breaks 1-35
+
+preserve  // Generate a dataset with statelabels 
+keep if quarterdate==100
+keep statenum statenum2 stateabb
+save "statelabels.dta",replace
+restore
+
+
 xtset statenum2 quarterdate //necessary for synth
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 forvalues i=1/35 {
-quiet synth `var' `var'(92(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(`i') trperiod(114) keep("S2_`var'_`i'.dta", replace)
+quiet synth `var' `var'(88(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(`i') trperiod(114) keep("S2_`var'_`i'.dta", replace)
 preserve 
 
 use S2_`var'_`i'.dta, clear 
@@ -458,7 +563,7 @@ merge 1:1 _n using S2_`var'_`i', nogen  //merge with the SC estimates for state1
 if `i'==35 {
 merge 1:1 _n using S2_`var'_`i', nogen // merge with the remaining 34 states
 drop if _time==.
-save "S2placebos_`var'.dta", replace 
+save "S2_placebos_`var'.dta", replace 
 
 // Make diagram // MORE FORMATTING NEEDED!
 line diff_1 _time, lcolor(dimgray)  || line diff_2 _time, lcolor(dimgray) || line diff_3 _time, lcolor(dimgray) || line diff_4 _time, lcolor(dimgray) || line diff_5 _time, lcolor(dimgray) || line diff_6 _time, lcolor(dimgray) || line diff_7 _time, lcolor(dimgray) || line diff_8 _time, lcolor(dimgray) || line diff_9 _time, lcolor(dimgray) || line diff_10 _time, lcolor(dimgray) || line diff_11 _time, lcolor(dimgray) || line diff_12 _time, lcolor(dimgray) || line diff_13 _time, lcolor(dimgray) || line diff_14 _time, lcolor(dimgray) || line diff_15 _time, lcolor(dimgray) || line diff_16 _time, lcolor(dimgray) || line diff_17 _time, lcolor(dimgray) || line diff_18 _time, lcolor(dimgray)  || line diff_19 _time, lcolor(dimgray)|| line diff_20 _time, lcolor(dimgray) || line diff_21 _time, lcolor(dimgray) || line diff_22 _time, lcolor(dimgray)  || line diff_23 _time, lcolor(dimgray) || line diff_24 _time, lcolor(dimgray) || line diff_25 _time, lcolor(dimgray) || line diff_26 _time, lcolor(dimgray) || line diff_27 _time, lcolor(dimgray) || line diff_28 _time, lcolor(dimgray) || line diff_29 _time, lcolor(dimgray) || line diff_30 _time, lcolor(dimgray) || line diff_31 _time, lcolor(dimgray) || line diff_32 _time, lcolor(dimgray) || line diff_33 _time, lcolor(dimgray) || line diff_34 _time, lcolor(dimgray) || line diff_35 _time, lcolor(dimgray) ||line CA_diff_`var' _time, lwidth (medthick) xtitle("Time") ytitle("Gap synthetic-real") lcolor(black) scheme(s1color) legend(off) yline(0) xline(114) title("GAP Synthetic and Real, CA vs Donor states:`var'")
@@ -479,7 +584,9 @@ xtset statenum2 quarterdate
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 forvalues i=1/35 {
-quiet synth `var' `var'(92) `var'(93) `var'(94) `var'(95) `var'(96) ///
+quiet synth `var' ///
+`var'(88) `var'(89) `var'(90) `var'(91) /// 
+`var'(92) `var'(93) `var'(94) `var'(95) `var'(96) ///
 `var'(97) `var'(98) `var'(99) `var'(100) ///
 `var'(101) `var'(102) `var'(103) ///
 `var'(104) `var'(105) `var'(106) `var'(107) /// 
@@ -513,7 +620,7 @@ merge 1:1 _n using S1_`var'_`i', nogen  //merge with the SC estimates for state1
 if `i'==35 {
 merge 1:1 _n using S1_`var'_`i', nogen // merge with the remaining 34 states
 drop if _time==.
-save "S1placebos_`var'.dta", replace 
+save "S1_placebos_`var'.dta", replace 
 
 // Make diagram // MORE FORMATTING NEEDED!
 line diff_1 _time, lcolor(dimgray)  || line diff_2 _time, lcolor(dimgray) || line diff_3 _time, lcolor(dimgray) || line diff_4 _time, lcolor(dimgray) || line diff_5 _time, lcolor(dimgray) || line diff_6 _time, lcolor(dimgray) || line diff_7 _time, lcolor(dimgray) || line diff_8 _time, lcolor(dimgray) || line diff_9 _time, lcolor(dimgray) || line diff_10 _time, lcolor(dimgray) || line diff_11 _time, lcolor(dimgray) || line diff_12 _time, lcolor(dimgray) || line diff_13 _time, lcolor(dimgray) || line diff_14 _time, lcolor(dimgray) || line diff_15 _time, lcolor(dimgray) || line diff_16 _time, lcolor(dimgray) || line diff_17 _time, lcolor(dimgray) || line diff_18 _time, lcolor(dimgray)  || line diff_19 _time, lcolor(dimgray)|| line diff_20 _time, lcolor(dimgray) || line diff_21 _time, lcolor(dimgray) || line diff_22 _time, lcolor(dimgray)  || line diff_23 _time, lcolor(dimgray) || line diff_24 _time, lcolor(dimgray) || line diff_25 _time, lcolor(dimgray) || line diff_26 _time, lcolor(dimgray) || line diff_27 _time, lcolor(dimgray) || line diff_28 _time, lcolor(dimgray) || line diff_29 _time, lcolor(dimgray) || line diff_30 _time, lcolor(dimgray) || line diff_31 _time, lcolor(dimgray) || line diff_32 _time, lcolor(dimgray) || line diff_33 _time, lcolor(dimgray) || line diff_34 _time, lcolor(dimgray) || line diff_35 _time, lcolor(dimgray) ||line CA_diff_`var' _time, lwidth (medthick) xtitle("Time") ytitle("Gap synthetic-real") lcolor(black) scheme(s1color) legend(off) yline(0) xline(114) title("GAP Synthetic and Real, CA vs Donor states:`var'")
@@ -528,11 +635,173 @@ merge 1:1 _n using S1_`var'_`i', nogen  //merge with the SC estimates for state1
 }
 restore 
 
+//Random Inference S1
+
+use emp_wage_data2biii, clear
+xtset statenum quarterdate
+
+preserve
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+use S1_placebos_`var', clear
+rename CA_diff_`var' diff_36 //Now state 36 is CALIFORNIA REMEMBER
+forvalues i=1/36{
+gen diff2_`i'=(diff_`i')^2
+}
+gen post=0
+replace post=1 if _time>114
+collapse (mean) diff*, by(post)
+
+reshape long diff_ diff2_, i(post) j(statenum2)
+reshape wide diff_ diff2_, i(statenum2) j(post)
+
+forvalues i=0/1{
+gen sqrtdiff2_`i'= sqrt(diff2_`i')
+
+}
+gen r=sqrtdiff2_1/sqrtdiff2_0
+merge 1:1 statenum2 using statelabels, keepusing(stateabb) nogen
+replace stateabb="CA" if statenum2==36
+label values statenum2 stateabb
+
+
+
+hdquantile r, p(5 10 90 95) matname(cutoffs)
+local q5=cutoffs[1,1]
+local q10=cutoffs[1,2]
+local q90=cutoffs[1,3]
+local q95=cutoffs[1,4]
+
+set scheme s1color
+
+graph dot (asis) r,  over (stateabb, sort(1)) yline(`q5' `q10' `q90' `q95', lcolor(black)) ysc(fex r(0 3)) marker(1, ms(Oh)) 
+graph play 2Biii_editing // I stored an editing of my graph (2Biii_editing.)
+
+graph export "2Biii_S1_inference_`var'.png", as(png) replace
+}
+
+restore
+
+//Random Inference S1
+///////////////////////
+/// Specification 2////
+
+preserve
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+use S2_placebos_`var', clear
+rename CA_diff_`var' diff_36 //Now state 36 is CALIFORNIA REMEMBER
+forvalues i=1/36{
+gen diff2_`i'=(diff_`i')^2
+}
+gen post=0
+replace post=1 if _time>114
+collapse (mean) diff*, by(post)
+
+reshape long diff_ diff2_, i(post) j(statenum2)
+reshape wide diff_ diff2_, i(statenum2) j(post)
+
+forvalues i=0/1{
+gen sqrtdiff2_`i'= sqrt(diff2_`i')
+
+}
+gen r=sqrtdiff2_1/sqrtdiff2_0
+merge 1:1 statenum2 using statelabels, keepusing(stateabb) nogen
+replace stateabb="CA" if statenum2==36
+label values statenum2 stateabb
+
+
+
+hdquantile r, p(5 10 90 95) matname(cutoffs)
+local q5=cutoffs[1,1]
+local q10=cutoffs[1,2]
+local q90=cutoffs[1,3]
+local q95=cutoffs[1,4]
+
+set scheme s1color
+
+graph dot (asis) r,  over (stateabb, sort(1)) yline(`q5' `q10' `q90' `q95', lcolor(black)) ysc(fex r(0 3)) marker(1, ms(Oh)) 
+graph play 2Biii_editing // I stored an editing of y grap
+
+graph export "2Biii_S2_inference_`var'.png", as(png) replace
+}
+restore
 
 
 
 ** 2B iv) **
+// Estimate the SC during 1983q1-1986q2 (92-105)
+// Use 1986q3-1988q2 as validation  (106-113)
+// 1988q3-1990q1: post period  (114-120)
+
+
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+
+synth `var' ///
+`var'(88) `var'(89) `var'(90) `var'(91) /// 
+`var'(92) `var'(93) `var'(94) `var'(95) `var'(96) ///
+`var'(97) `var'(98) `var'(99) `var'(100) ///
+`var'(101) `var'(102) `var'(103) ///
+`var'(104) `var'(105) `var'(106) `var'(107) /// 
+`var'(108) `var'(109) `var'(110) `var'(111) ///
+`var'(112) `var'(113), trunit(6) mseperiod(106(1)113) trperiod(114) keep("validS1_`var'.dta", replace)  figure
+
+preserve
+
+use spec1_`var', clear 
+gen CA_diff_`var'=_Y_synthetic-_Y_treated
+rename _W_Weight s1w_`var'
+sa spec1_`var', replace 
+
+gen period_4q = floor((_time-114)/4)
+collapse (mean) _Y_treated (mean) _Y_synthetic, by(period_4q)
+/// More formating
+twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
+*graph export "2Bi`var'_spec1.png", as(png) replace
+
+gen Yt_minus_Ys=_Y_treated-_Y_synthetic
+/// More formating
+twoway (connected Yt_minus_Ys period_4q), xline(0) yline(0) scheme(s1color) xtitle("Event Time") 
+*graph export "2Bi`var'dif_spec1.png", as(png) replace
+restore 
+}
+
+//Method two: All quarterly pretreatment outcomes
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
+
+synth `var' `var'(88(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(6) trperiod(114) keep("validS2_`var'.dta", replace)
+
+preserve
+
+use spec2_`var', clear 
+rename _W_Weight s2w_`var'
+gen CA_diff_`var'=_Y_synthetic-_Y_treated
+sa spec2_`var', replace 
+
+gen period_4q = floor((_time-114)/4)
+collapse (mean) _Y_treated (mean) _Y_synthetic, by(period_4q)
+
+
+/// Graph 1: CA vs Synthetic CA
+twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
+*graph export "2Bi`var'_spec2.png", as(png) replace
+
+/// Graph 2: Difference between the two
+gen Yt_minus_Ys=_Y_treated-_Y_synthetic
+twoway (connected Yt_minus_Ys period_4q), xline(0) yline(0) scheme(s1color) xtitle("Event Time") 
+*graph export "2Bi`var'dif_spec2.png", as(png) replace
+
+/// Estimate of the effect:
+
+restore 
+}
+
+
+
+
 
 ** 2B  v) **
+
+
+
+
 
 ** 2B vi) **
