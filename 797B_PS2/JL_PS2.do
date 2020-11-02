@@ -75,7 +75,7 @@ eststo I`i'2
 
 
 // (3) Div without controls
-quiet areg I`i'  lnMW  i.d_div_time $X, cluster(state) absorb(state) 
+quiet areg I`i'  lnMW  i.d_div_time, cluster(state) absorb(state) 
 eststo I`i'3
 
 // (4) Div with controls 
