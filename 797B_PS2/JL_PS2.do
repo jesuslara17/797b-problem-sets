@@ -125,7 +125,7 @@ foreach j of numlist    25(25)250  {
 }
 
 foreach i of varlist I*{
-areg `i' i.d_div_time lnMW  $X, absorb(statefips) cluster(state)
+quiet areg `i' i.d_div_time lnMW  $X, absorb(statefips) cluster(state)
 sca bMW_`i'=_b[lnMW] 
 sca sebMW_`i'=_se[lnMW]
 eststo r`i'
@@ -134,7 +134,7 @@ eststo r`i'
 
 *coefplot rI*, ciopts(recast(rarea)) vertical keep(lnMW) swapnames scheme(s1color) yline(0) title ("Conditional quantile partial effects") nolabel
 
-coefplot (rI25 \ rI50 \ rI75\ rI100\ rI125 \ rI150 \rI175\ rI200\ rI225\ rI250), vertical keep(lnMW)  aseq swapnames scheme(s1color)  title ("Conditional quantile partial effects") ciopts(recast(rarea) color(gs13))  recast(connected) yline(0) xtitle(Poverty Cutoffs) ytitle(Estimated lnMW coefficient)
+coefplot (rI25 \ rI50 \ rI75\ rI100\ rI125 \ rI150 \rI175\ rI200\ rI225\ rI250, lcolor(black) mcolor(black)), vertical keep(lnMW)  aseq swapnames scheme(s1color)  title ("Conditional quantile partial effects") ciopts(recast(rarea) color(gs13))  recast(connected) yline(0, lcolor(black)) xtitle(Poverty Cutoffs) ytitle(Estimated lnMW Coefficient)
 
 graph export "1Bi.png", as(png) replace
 
@@ -177,7 +177,7 @@ forvalues i=25(25)250{
 quiet su I`i' if poverty<`i' & poverty!=.
 local quant = round(r(N)/N, 0.01) 
 
-xi: rifreg poverty lnMW  i.d_div_time i.statefips $X, q(`quant')
+quiet xi: rifreg poverty lnMW  i.d_div_time i.statefips $X, q(`quant')
 sca brif_`i'=_b[lnMW]
 eststo RI`i'
 
@@ -189,7 +189,7 @@ forvalues i=25(25)250{
 quiet replace brif=brif_`i' if cutoffs==`i'
 }
 
-coefplot (RI25 \ RI50 \ RI75\ RI100\ RI125 \ RI150 \RI175\ RI200\ RI225\ RI250), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0) title ("Unconditional quantile partial effects") ciopts(recast(rarea) color(gs13)) recast(connected) xtitle(Poverty Cutoffs) ytitle(Estimated lnMW coefficient)
+coefplot (RI25 \ RI50 \ RI75\ RI100\ RI125 \ RI150 \RI175\ RI200\ RI225\ RI250, lcolor(black) mcolor(black)), vertical keep(lnMW) aseq swapnames scheme(s1color) yline(0, lcolor(black)) title ("Unconditional quantile partial effects") ciopts(recast(rarea) color(gs13)) recast(connected) xtitle(Poverty Cutoffs) ytitle(Estimated lnMW Coefficient)
 
 graph export "1Bii.png", as(png) replace
 
@@ -247,6 +247,7 @@ gen CA=0
 // Make a dataset that we will use. to merge and get the labels associated to each statenum 
 
 gen CA_post=post*CA
+
 ** 2A i) **
 //Gen logs of dependent variables
 gen overall_logemp = ln(overall_emp) 
@@ -299,11 +300,11 @@ eststo clear
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 	xtreg `var' CA_post i.quarterdate, fe robust
-		eststo
+		eststo DD`var'
 }
 
 //Personalize formating
-esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("Wage (Teen)" "Wage (Overall)" "Employment (Teen)" "Employment (Overall)") title(Overall Difference in Difference\label{auto}) b(3) coef(CA_post "diff-in-diff")	
+*esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("Wage (Teen)" "Wage (Overall)" "Employment (Teen)" "Employment (Overall)") title(Overall Difference in Difference\label{auto}) b(3) coef(CA_post "diff-in-diff")	
 
 ** 2A ii) **
 
@@ -327,14 +328,14 @@ esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("Wage (Teen)"
  
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 
-synth `var' ///
+quiet synth `var' ///
 `var'(88) `var'(89) `var'(90) `var'(91) /// 
 `var'(92) `var'(93) `var'(94) `var'(95) `var'(96) ///
 `var'(97) `var'(98) `var'(99) `var'(100) ///
 `var'(101) `var'(102) `var'(103) ///
 `var'(104) `var'(105) `var'(106) `var'(107) /// 
 `var'(108) `var'(109) `var'(110) `var'(111) ///
-`var'(112) `var'(113), trunit(6) trperiod(114) keep("spec1_`var'.dta", replace) figure
+`var'(112) `var'(113), trunit(6) trperiod(114) keep("spec1_`var'.dta", replace) 
 
 preserve
 
@@ -345,21 +346,42 @@ sa spec1_`var', replace
 
 gen period_4q = floor((_time-114)/4)
 collapse (mean) _Y_treated (mean) _Y_synthetic, by(period_4q)
+
+if "`var'"=="teen_logwage"{
+	local title ="Wage: Teen"
+	local ytitle= "log(wage)"
+	}
+	if "`var'"=="overall_logwage"{
+	local title ="Wage: Overall"
+	local ytitle="log(wage)"
+	}
+if "`var'"=="teen_logemp"{
+	local title ="Employment: Teen"
+	local ytitle="log(employment)"
+	}
+
+if "`var'"=="overall_logemp"{
+	local title ="Employment: Overall"
+	local ytitle="log(employment)"
+	}
+else{
+}
 /// More formating
-twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
+twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q, lcolor(blue)  mcolor(blue)), xline(0)  scheme(s1color) xtitle("Event Time")  title(`title') ytitle(`ytitle') legend(order(1 "CA" 2 "Synthetic CA"))
 graph export "2Bi`var'_spec1.png", as(png) replace
 
 gen Yt_minus_Ys=_Y_treated-_Y_synthetic
-/// More formating
-twoway (connected Yt_minus_Ys period_4q), xline(0) yline(0) scheme(s1color) xtitle("Event Time") 
+
+twoway (connected Yt_minus_Ys period_4q, lcolor(red)  mcolor(red)), xline(0) yline(0) scheme(s1color) xtitle("Event Time") title(`local') ytitle(Gap between real and synthetic CA)
 graph export "2Bi`var'dif_spec1.png", as(png) replace
 restore 
 }
 
+///////////////////////////////////////////
 //S2: All quarterly pretreatment outcomes
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 
-synth `var' `var'(88(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(6) trperiod(114) keep("spec2_`var'.dta", replace)
+quiet synth `var' `var'(88(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(6) trperiod(114) keep("spec2_`var'.dta", replace)
 
 preserve
 
@@ -372,13 +394,35 @@ gen period_4q = floor((_time-114)/4)
 collapse (mean) _Y_treated (mean) _Y_synthetic, by(period_4q)
 
 
+/// Locals for formatting 
+if "`var'"=="teen_logwage"{
+	local title ="Wage: Teen"
+	local ytitle= "log(wage)"
+	}
+	if "`var'"=="overall_logwage"{
+	local title ="Wage: Overall"
+	local ytitle="log(wage)"
+	}
+if "`var'"=="teen_logemp"{
+	local title ="Employment: Teen"
+	local ytitle="log(employment)"
+	}
+
+if "`var'"=="overall_logemp"{
+	local title ="Employment: Overall"
+	local ytitle="log(employment)"
+	}
+else{
+}
+
+
 /// Graph 1: CA vs Synthetic CA
-twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
+twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q, lcolor(blue) mcolor(blue)), xline(0)  scheme(s1color) title(`title') ytitle(`ytitle') xtitle("Event Time") legend(order(1 "CA" 2 "Synthetic CA"))
 graph export "2Bi`var'_spec2.png", as(png) replace
 
 /// Graph 2: Difference between the two
 gen Yt_minus_Ys=_Y_treated-_Y_synthetic
-twoway (connected Yt_minus_Ys period_4q), xline(0) yline(0) scheme(s1color) xtitle("Event Time") 
+twoway (connected Yt_minus_Ys period_4q, lcolor(red) mcolor(red)), xline(0) yline(0) scheme(s1color) xtitle("Event Time")  title(`local') ytitle(Gap between real and synthetic CA)
 graph export "2Bi`var'dif_spec2.png", as(png) replace
 
 /// Estimate of the effect:
@@ -731,77 +775,153 @@ restore
 // Estimate the SC during 1983q1-1986q2 (92-105)
 // Use 1986q3-1988q2 as validation  (106-113)
 // 1988q3-1990q1: post period  (114-120)
-
+use emp_wage_data2biii, clear
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 
 synth `var' ///
-`var'(88) `var'(89) `var'(90) `var'(91) /// 
+///`var'(88) `var'(89) `var'(90) `var'(91) /// 
 `var'(92) `var'(93) `var'(94) `var'(95) `var'(96) ///
 `var'(97) `var'(98) `var'(99) `var'(100) ///
 `var'(101) `var'(102) `var'(103) ///
 `var'(104) `var'(105) `var'(106) `var'(107) /// 
 `var'(108) `var'(109) `var'(110) `var'(111) ///
-`var'(112) `var'(113), trunit(6) mseperiod(106(1)113) trperiod(114) keep("validS1_`var'.dta", replace)  figure
-
+`var'(112) `var'(113), trunit(6) mseperiod(106(1)113) trperiod(114) keep("validS1_`var'.dta", replace)  
 preserve
 
-use spec1_`var', clear 
-gen CA_diff_`var'=_Y_synthetic-_Y_treated
-rename _W_Weight s1w_`var'
-sa spec1_`var', replace 
-
+use validS1_`var', clear 
 gen period_4q = floor((_time-114)/4)
 collapse (mean) _Y_treated (mean) _Y_synthetic, by(period_4q)
-/// More formating
-twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
-*graph export "2Bi`var'_spec1.png", as(png) replace
+/// Locals for formatting 
+if "`var'"=="teen_logwage"{
+	local title ="Wage: Teen | Validation 1986q3-1990q1"
+	local ytitle= "log(wage)"
+	}
+	if "`var'"=="overall_logwage"{
+	local title ="Wage: Overall | Validation 1986q3-1990q1"
+	local ytitle="log(wage)"
+	}
+if "`var'"=="teen_logemp"{
+	local title ="Employment: Teen | Validation 1986q3-1990q1"
+	local ytitle="log(employment) "
+	}
 
-gen Yt_minus_Ys=_Y_treated-_Y_synthetic
-/// More formating
-twoway (connected Yt_minus_Ys period_4q), xline(0) yline(0) scheme(s1color) xtitle("Event Time") 
-*graph export "2Bi`var'dif_spec1.png", as(png) replace
-restore 
+if "`var'"=="overall_logemp"{
+	local title ="Employment: Overall | Validation 1986q3-1990q1"
+	local ytitle="log(employment)"
+	}
+else{
+}
+
+/// Graph Validation 
+twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q, lcolor(blue) mcolor(blue)), xline(0)  scheme(s1color) title(`title') ytitle(`ytitle') xtitle("Event Time") legend(order(1 "CA" 2 "Synthetic CA"))
+graph export "2Bv`var'_spec1.png", as(png) replace
+restore
 }
 
 //Method two: All quarterly pretreatment outcomes
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 
-synth `var' `var'(88(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(6) trperiod(114) keep("validS2_`var'.dta", replace)
+synth `var' `var'(92(1)113) race_share1 race_share2 race_share3 hispanic_share emp_sh_ind1 emp_sh_ind2 emp_sh_ind3 emp_sh_ind4 emp_sh_ind5 emp_sh_ind6 emp_sh_ind7 emp_sh_ind8 emp_sh_ind9, trunit(6) trperiod(114) mseperiod(106(1)113) xperiod(92(1)113) keep("validS2_`var'.dta", replace)
 
 preserve
 
-use spec2_`var', clear 
-rename _W_Weight s2w_`var'
-gen CA_diff_`var'=_Y_synthetic-_Y_treated
-sa spec2_`var', replace 
-
+use validS2_`var', clear 
 gen period_4q = floor((_time-114)/4)
 collapse (mean) _Y_treated (mean) _Y_synthetic, by(period_4q)
+/// Locals for formatting 
+if "`var'"=="teen_logwage"{
+	local title ="Wage: Teen | Validation 1986q3-1990q1"
+	local ytitle= "log(wage)"
+	}
+	if "`var'"=="overall_logwage"{
+	local title ="Wage: Overall | Validation 1986q3-1990q1"
+	local ytitle="log(wage)"
+	}
+if "`var'"=="teen_logemp"{
+	local title ="Employment: Teen | Validation 1986q3-1990q1"
+	local ytitle="log(employment) "
+	}
 
+if "`var'"=="overall_logemp"{
+	local title ="Employment: Overall | Validation 1986q3-1990q1"
+	local ytitle="log(employment)"
+	}
+else{
+}
 
-/// Graph 1: CA vs Synthetic CA
-twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q), xline(0)  scheme(s1color) xtitle("Event Time") 
-*graph export "2Bi`var'_spec2.png", as(png) replace
-
-/// Graph 2: Difference between the two
-gen Yt_minus_Ys=_Y_treated-_Y_synthetic
-twoway (connected Yt_minus_Ys period_4q), xline(0) yline(0) scheme(s1color) xtitle("Event Time") 
-*graph export "2Bi`var'dif_spec2.png", as(png) replace
-
-/// Estimate of the effect:
-
-restore 
+/// Graph Validation 
+twoway (connected _Y_treated period_4q) (connected _Y_synthetic period_4q, lcolor(blue) mcolor(blue)), xline(0)  scheme(s1color) title(`title') ytitle(`ytitle') xtitle("Event Time") legend(order(1 "CA" 2 "Synthetic CA"))
+graph export "2Bv`var'_spec2.png", as(png) replace
+restore
 }
 
 
 
+** 2B  v) ** 
+// Pseudo synthetic DID
 
 
-** 2B  v) **
+use emp_wage_data2biii,clear
+xtset statenum quarterdate
+merge m:1 statenum using weights.dta, nogenerate // Merge with my dta containing all weights assigned by the SC method
 
 
+// DID with the weights form SC
 
+//Weights from Specification 1
+
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+
+replace s1w_`var'=1 if stateabb=="CA"
+	  quiet areg `var' CA_post i.quarterdate [aw=s1w_`var'], absorb(statenum) robust
+	  eststo SCDD1`var'
+
+
+}
+
+//Weights from Specification 2
+
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+
+replace s2w_`var'=1 if stateabb=="CA"
+	quiet areg `var' CA_post i.quarterdate [aw=s2w_`var'], absorb(statenum) robust
+    eststo SCDD2`var'
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+/////////// Here I will produce my table with all my estimates (I still have to add the lags, pscore... etc)
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+
+if "`var'"=="teen_logwage" {
+local title ="Wage: Teen"
+
+esttab  DD`var' SCDD1`var' SCDD2`var'  using Table_2.tex, replace ty keep(CA_post) varlabels(CA_post " `title' ") nonum se noobs nonotes mlabels("(1) DID" "(2) SDID1" "(3) SDID2") b(4) fragment
+}
+
+else{
+if "`var'"=="overall_logwage"{
+	local title ="Wage: Overall"
+	}
+if "`var'"=="teen_logemp"{
+	local title ="Employment: Teen"
+	}
+
+if "`var'"=="overall_logemp"{
+	local title ="Employment: Overall"
+	}
+else{
+}
+
+
+esttab  DD`var' SCDD1`var' SCDD2`var'  using Table_2.tex, append ty keep(CA_post) varlabels(CA_post "`title'") nonum se noobs nonotes mlabels(none) b(4) fragment
+}
+}
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 
 
 ** 2B vi) **
