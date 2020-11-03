@@ -724,7 +724,7 @@ quiet synth `var' ///
 preserve
 
 use spec1_`var', clear 
-gen CA_diff_`var'=_Y_synthetic-_Y_treated
+gen CA_diff_`var'=_Y_treated-_Y_synthetic
 rename _W_Weight s1w_`var'
 sa spec1_`var', replace 
 
@@ -771,7 +771,7 @@ preserve
 
 use spec2_`var', clear 
 rename _W_Weight s2w_`var'
-gen CA_diff_`var'=_Y_synthetic-_Y_treated
+gen CA_diff_`var'=_Y_treated -_Y_synthetic
 sa spec2_`var', replace 
 
 gen period_4q = floor((_time-114)/4)
