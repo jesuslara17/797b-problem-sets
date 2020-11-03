@@ -2,8 +2,8 @@ StataFileTM:00001:01100:GREC:                          :
 00006:00006:00001:
 *! classname: dotchartgraph_g
 *! family: bar
-*! date: 31 Oct 2020
-*! time: 16:38:12
+*! date:  2 Nov 2020
+*! time: 17:24:39
 *! graph_scheme: s1color
 *! naturallywhite: 1
 *! end
@@ -11,7 +11,15 @@ StataFileTM:00001:01100:GREC:                          :
 // File created by Graph Editor Recorder.
 // Edit only if you know what you are doing.
 
-.grpaxis.style.editstyle majorstyle(tickstyle(textstyle(size(small)))) editcopy
+.caption.text = {}
+.caption.text.Arrpush Postperiod RMSPE / Preperiod RMSPE
+// caption edits
+
+.note.text = {}
+.note.text.Arrpush Vertical lines from left to right: 5, 10, 90 and 95% estimated cutoffs
+// note edits
+
+.grpaxis.style.editstyle majorstyle(tickstyle(textstyle(size(relative2p2)))) editcopy
 // grpaxis size
 
 
