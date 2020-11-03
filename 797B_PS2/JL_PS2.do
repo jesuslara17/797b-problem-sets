@@ -259,7 +259,6 @@ gen teen_logemp=ln(teen_emp)
 g period_4q = floor((quarterdate-114)/4)
 
 
-//More formatting needed
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 preserve 
 collapse (mean) `var', by(CA period_4q)
@@ -301,7 +300,7 @@ xtset statenum quarterdate
 eststo clear
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
-	xtreg `var' CA_post i.quarterdate, fe robust
+	quiet areg `var' CA_post i.quarterdate, absorb(statenum) cluster(statenum)
 		eststo DD`var'
 }
 
@@ -329,7 +328,6 @@ eststo L2`var'
 
 
 }
-esttab, se replace keep(treatment)
 
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
@@ -1068,7 +1066,7 @@ foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 if "`var'"=="teen_logwage" {
 local title ="Wage: Teen"
 
-esttab  DD`var' SCDD1`var' SCDD2`var' PSR`var' using Table_2.tex, replace ty keep(CA_post) varlabels(CA_post " `title' ") nonum se noobs nonotes mlabels("(1) DID" "(2) SDID1" "(3) SDID2" "(4)PSR") b(4) fragment
+esttab  DD`var' L1`var' L2`var' L3`var' PSR`var' SCDD1`var' SCDD2`var'  using Table_2.tex, replace ty keep(CA_post) varlabels(CA_post " `title' ") nonum se noobs nonotes mlabels("(1)" "(2)" "(3)" "(4)" "(5)" "(6)" "(7)") b(4) fragment
 }
 
 else{
@@ -1081,12 +1079,12 @@ if "`var'"=="teen_logemp"{
 
 if "`var'"=="overall_logemp"{
 	local title ="Employment: Overall"
-	}
+	}DID
 else{
 }
 
 
-esttab  DD`var' SCDD1`var' SCDD2`var'  PSR`var' using Table_2.tex, append ty keep(CA_post) varlabels(CA_post "`title'") nonum se noobs nonotes mlabels(none) b(4) fragment
+esttab  DD`var' L1`var' L2`var' L3`var' PSR`var' SCDD1`var' SCDD2`var'  using Table_2.tex, append ty keep(CA_post) varlabels(CA_post "`title'") nonum se noobs nonotes mlabels(none) b(3) fragment
 }
 }
 ///////////////////////////////////////////////////////////////////////////////////////////
