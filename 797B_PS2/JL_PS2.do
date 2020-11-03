@@ -208,6 +208,11 @@ esttab m(Table_1Bii,fmt(%9.4f)) using "Table_1Bii.tex", replace title(Conditiona
 *****   2   *****
 *****************
 
+
+**** PROBLEM ****
+*****   2   *****
+*****************
+
 use emp_wage_data,clear
 gen time= year+(qtr-1)/4
 
@@ -247,7 +252,7 @@ replace CA=1 if (stateabb=="CA")
 
 /// CA: treated
 gen CA_post=post*CA  
-
+bys statenum: gen date=_n
 /// CA_post: treatment
 
 ** 2A i) **
@@ -258,6 +263,7 @@ gen teen_logemp=ln(teen_emp)
 // Our 4 outcome variables: teen_logwage, overall_logwage, overall_logemp, teen_logemp
 g period_4q = floor((quarterdate-114)/4)
 
+save "emp_wage_data_normal.dta", replace
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 preserve 
@@ -297,7 +303,7 @@ restore
 //DD regressions
 xtset statenum quarterdate
 
-eststo clear
+
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 	quiet areg `var' CA_post i.quarterdate, absorb(statenum) cluster(statenum)
@@ -406,35 +412,294 @@ eststo PSR`var'
 }
 //Own calculations
 
-//teffects ipw
 
-/*
-foreach j of global precovariates {
-	bysort statenum: replace `j' = l1.`j' if `j'==.
+
+
+
+
+
+
+*******************************************
+***************** 2A) iv) *****************
+*******************************************
+
+use emp_wage_data,clear
+gen time= year+(qtr-1)/4
+
+keep if time >=1982 & time <=1990
+** PART 2A **
+*************
+// Identify treatment and donor states
+* First Visual Inspection
+//separate MW, by(statenum)
+// xtline MW
+//Now formally
+sum statenum
+local min=r(min)
+local max=r(max)
+gen donor=.
+forvalues i=`min'/`max'{
+	quietly sum MW if statenum==`i'
+		local minMW=r(min)
+		local maxMW=r(max)
+	if `minMW'==`maxMW'{
+		quietly replace donor=1 if(statenum==`i')
+		}
+	else{
+	 di "`i' -- Not a donor"
+		}
+	}
+//California is num 6
+drop if donor!=1& stateabb!="CA"
+
+// Treatment variables
+gen post=0
+replace post=1 if(time>=1988.75) 
+
+/// post: post treatment
+gen CA=0
+replace CA=1 if (stateabb=="CA") 
+
+/// CA: treated
+gen CA_post=post*CA  
+
+/// CA_post: treatment
+
+** 2A i) **
+//Gen logs of dependent variables
+gen overall_logemp = ln(overall_emp) 
+gen teen_logemp=ln(teen_emp)
+
+// Our 4 outcome variables: teen_logwage, overall_logwage, overall_logemp, teen_logemp
+g period_4q = floor((quarterdate-114)/4)
+
+
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+preserve 
+collapse (mean) `var', by(CA period_4q)
+
+if "`var'"=="teen_logwage"{
+	local title ="Wage: Teen"
+	local ytitle= "log(wage)"
+	}
+	if "`var'"=="overall_logwage"{
+	local title ="Wage: Overall"
+	local ytitle="log(wage)"
+	}
+if "`var'"=="teen_logemp"{
+	local title ="Employment: Teen"
+	local ytitle="log(employment)"
+	}
+
+if "`var'"=="overall_logemp"{
+	local title ="Employment: Overall"
+	local ytitle="log(employment)"
+	}
+else{
+}
+
+
+twoway (connected `var' period_4q if CA==1)  ///
+(connected  `var' period_4q if CA==0, lcolor(blue) mcolor(blue)), xline(0, lcolor(black)) scheme(s1color)  xtitle("Event Time") ytitle(`ytitle') title(`title') legend(order(1 "CA" 2 "Donor states"))
+graph export "2Ai`var'.png", as(png) replace
+restore
 }
 
 
 
-use emp_wage_data2Aii, replace
 
+
+//DD regressions
 xtset statenum quarterdate
 
-foreach var of varlist teen_logwage{
- ///teffects ipw (lnwage) (FB exp exp2 married racesing hisp educ99 english gender,probit), atet vce(robust)
 
-teffects ipw (`var') (CA_post  $precovariates, logit), iterate(7000)  vce(cluster statenum) atet
+
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+	quiet areg `var' CA_post i.quarterdate, absorb(statenum) cluster(statenum)
+		eststo DD`var'
+}
+
+//Personalize formating
+*esttab using 2ai.tex, replace keep(CA_post) nonum se noobs mlabels("Wage (Teen)" "Wage (Overall)" "Employment (Teen)" "Employment (Overall)") title(Overall Difference in Difference\label{auto}) b(3) coef(CA_post "diff-in-diff")	
+
+** 2A ii) **
+
+
+///Checking lags and leads to see if there are pre-treatment trends: (that is, this is just just detecting pre-existing trends, not controlling for it, no?)
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+quiet reghdfe `var' CA_post L3.CA_post L2.CA_post L1.CA_post f1.CA_post f2.CA_post f3.CA_post i.quarterdate, cluster(statenum) absorb(statenum)
+eststo L1`var'
 }
 
 
-///foreach j of varlist teen_logwage teen_emp overall_logwage overall_emp {
-teffects ipw (`j') (treatment $precovariates, logit), iterate(7000) vce(cluster statenum) atet
-eststo `j'
+xi i.statenum*quarterdate, pre(_d)   
+*xi just creates dummies with the categorical values of `division' multiplied for the values of post; pre(_d) is just choosing a prefix for each of these dummies created.
+
+
+///trying to control for trend differences (see slide 21 lecture 7  9) - Adding state*time fixed effect.
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+quiet reghdfe `var' CA_post L3.CA_post L2.CA_post L1.CA_post  f1.CA_post f2.CA_post f3.CA_post  _d*, cluster(statenum) absorb(statenum)
+eststo L2`var'
+
+
 }
-*/
-// Now using teffects 
 
 
-** 2A iv) **
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+quiet reg `var' CA_post i.quarterdate l3.`var' l2.`var' l1.`var', cluster(statenum)
+eststo L3`var'
+}
+
+//What happens if we control for pre-existing linear and cuadratic trends?
+
+** 2A iii) **
+//Propensity Score Reweighting
+
+global covariates "race_share1 race_share2 race_share3 hispanic_share age_group_sh1 age_group_sh2 age_group_sh3 age_group_sh4 age_group_sh5 age_group_sh6"
+
+gen pretreated = 0
+replace pretreated = 1 if statenum==6 & quarterdate<114 
+/// California Pretreatment
+
+foreach j of global covariates {
+egen av`j' = mean(`j') if inrange(quarterdate,88,113) , by(statenum)
+egen av`j'post = mean(`j') if inrange(quarterdate,114,120) , by(statenum)
+}
+
+foreach j of global covariates {
+replace av`j'post=f1.av`j'post
+}
+
+foreach j of global covariates {
+	
+gen di`j' =  av`j' - av`j'[5]
+gen dii`j' =  av`j'post - av`j'post[5]
+
+g d`j' =  di`j' - dii`j'
+drop di`j' dii`j'
+
+egen dmean`j' = sum(abs(d`j'))
+}
+save "emp_wage_data2Aii.dta",replace
+
+
+global precovariates "avrace_share1 avrace_share2 avrace_share3 avhispanic_share avage_group_sh2"
+
+logit pretreated $precovariates 
+predict treatmentprop
+
+bysort statenum: replace treatmentprop = l1.treatmentprop if treatmentprop==.
+/// Generate variable of weights:
+qui sum treatmentprop
+local p = r(mean)
+cap drop w2Aiii
+gen w2Aiii = cond(pretreated==1,1, treatmentprop/(1-treatmentprop))
+preserve
+collapse (mean) w2Aii, by(stateabb)
+drop if stateabb=="CA"
+mkmat w2Aii, mat(w2Aii)
+mat colnames w2Aii= "Weights Logit"
+mat rownames  w2Aii="AL" "AK" "AZ" "AR" "CO" "DE" "FL" "GA" "ID" "IL" "IN" "KS" "KY" "LA" "MD" "MI" "MS" "MO" "MT" "NE" "NV" "NJ" "NM" "NY" "NC" "OH" "OK" "SC" "SD" "TN" "TX" "UT" "VA" "WV" "WY"
+mat list w2Aii
+esttab m(w2Aii, fmt(%9.4f)) using w2Aii.tex, replace title(Weights to Each State: Logit) nomtitles booktabs
+restore
+
+// Now run the regression using these weights 
+
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+
+quiet areg `var' CA_post i.quarterdate [aw=w2Aiii], absorb(statenum) robust
+eststo PSR`var'
+}
+
+
+****************
+****** Conley Taber
+
+use emp_wage_data_normal, clear
+
+//  https://www.ssc.wisc.edu/~ctaber/DD/diffdiff.html https://www.ssc.wisc.edu/~ctaber/742/contab12.pdf 
+foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
+	/* Create dummies for state+year interactions*/
+		egen Dstyr=group(date statenum)
+		reg `var' i.Dstyr //not using controls like example (asian etc.)
+
+		predict beta, xb
+
+	/* Predict residuals from regression */
+		quietly reg beta CA_post i.statenum i.date, noc
+			quietly predict `var'_res, res
+			quietly replace `var'_res=`var'_res+_b[CA_post]*CA_post
+
+		/* Create d tilde variable*/
+		quietly bysort date: egen `var'_djtCA=mean(CA_post) if CA==1
+		quietly bysort date: egen `var'_djt=sum(`var'_djtCA) 
+		quietly bysort statenum: egen `var'_meandjt=mean(`var'_djt)
+		qui: g `var'_dtil=`var'_djt-`var'_meandjt
+
+		/* Obtain difference in differences coefficient*/
+		qui: reg `var'_res `var'_dtil if CA==1, noc
+		matrix `var'_alpha=e(b)
+
+		/* Simulations*/
+			foreach i of numlist 1/56 {
+				capture {
+				reg `var'_res `var'_dtil if statenum==`i' & CA !=1, noc
+				matrix `var'_alpha = `var'_alpha\e(b)
+			}
+			}
+		
+
+		matrix `var'_asim = `var'_alpha[2...,1]
+		matrix `var'_alpha = `var'_alpha[1,1]
+
+		/* Confidence intervals */
+		qui: svmat `var'_alpha 
+		qui: svmat `var'_asim
+
+		qui: sum `var'_alpha
+		qui: gen `var'_alpha=r(mean)
+		qui: g `var'_ci=`var'_alpha - `var'_asim
+
+		/* form confidence intervals */
+		local numst=36
+		local i05=floor(0.050*(`numst'-1))
+		local i95=ceil(0.950*(`numst'-1))
+
+	quietly sum `var'_alpha
+		display as text "Difference in Differences coefficient=" as result _newline(2) r(mean)
+			scalar `var'_DiD = r(mean)
+
+		di " "	
+		di " "
+
+		sort `var'_asim
+		quietly sum `var'_ci if _n==`i05'|_n==`i95' 
+		display as text "90% Confidence interval=" as result _newline(2) r(min) _col(15) r(max)
+			scalar `var'_LCI = r(min)
+			scalar `var'_UCI = r(max)
+		cap drop beta Dstyr
+}
+
+sum teen_logwage*_ci 
+	local 1_min=r(min)
+	local 1_max=r(max)
+sum teen_logemp*_ci 
+	local 2_min=r(min)
+	local 2_max=r(max)
+sum overall_logwage*_ci 
+	local 3_min=r(min)
+	local 3_max=r(max)
+sum overall_logemp*_ci 
+	local 4_min=r(min)
+	local 4_max=r(max)
+mat confidence=(`1_min',`1_max'\ `2_min',`2_max'\ `3_min',`3_max'\ `4_min',`4_max')
+mat rown confidence= "Wage(Teen)" "Emp (Teen)" "Wage (Overall)" "Emp (Overall)" 
+mat coln confidence= "LowerBound(90\%)" "UpperBound(90\%)"
+mat list confidence
+
+outtable using "table2aiv.tex", mat(confidence) replace
+esttab m(confidence, fmt(%9.3f)) using "table2aiv.tex", replace title(Confidence Interval with Conley Taber's method) nomtitles booktabs
 
 
 ** PART 2B **
@@ -665,6 +930,7 @@ restore
 
 
 xtset statenum2 quarterdate //necessary for synth
+
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 forvalues i=1/35 {
@@ -943,7 +1209,7 @@ restore
 // Use 1986q3-1988q2 as validation  (106-113)
 // 1988q3-1990q1: post period  (114-120)
 use emp_wage_data2biii, clear
-xset statenum quarterdate
+xtset statenum quarterdate
 
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp {
 
@@ -1042,7 +1308,7 @@ merge m:1 statenum using weights.dta, nogenerate // Merge with my dta containing
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 
 replace s1w_`var'=1 if stateabb=="CA"
-	  quiet areg `var' CA_post i.quarterdate [aw=s1w_`var'], absorb(statenum) robust
+	   areg `var' CA_post i.quarterdate [aw=s1w_`var'], absorb(statenum) cluster(statenum)
 	  eststo SCDD1`var'
 
 
@@ -1053,7 +1319,7 @@ replace s1w_`var'=1 if stateabb=="CA"
 foreach var of varlist teen_logwage overall_logwage teen_logemp overall_logemp{
 
 replace s2w_`var'=1 if stateabb=="CA"
-	quiet areg `var' CA_post i.quarterdate [aw=s2w_`var'], absorb(statenum) robust
+	 areg `var' CA_post i.quarterdate [aw=s2w_`var'], absorb(statenum) cluster(statenum)
     eststo SCDD2`var'
 }
 
@@ -1079,14 +1345,17 @@ if "`var'"=="teen_logemp"{
 
 if "`var'"=="overall_logemp"{
 	local title ="Employment: Overall"
-	}DID
+	}
 else{
 }
 
 
-esttab  DD`var' L1`var' L2`var' L3`var' PSR`var' SCDD1`var' SCDD2`var'  using Table_2.tex, append ty keep(CA_post) varlabels(CA_post "`title'") nonum se noobs nonotes mlabels(none) b(3) fragment
+esttab  DD`var' L1`var' L2`var' L3`var' PSR`var' SCDD1`var' SCDD2`var'  using Table_2.tex, append ty keep(CA_post) varlabels(CA_post "`title'") nonum se noobs nonotes mlabels(none) b(4) fragment
+
 }
 }
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
