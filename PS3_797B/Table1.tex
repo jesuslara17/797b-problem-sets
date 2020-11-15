@@ -1,0 +1,18 @@
+\begin{table}[htbp]\centering
+\caption{Different estimations}
+\begin{tabular}{l*{6}{c}}
+\toprule
+            &        Bias&Type 1 Error&        Bias&Type 1 Error&        Bias&Type 1 Error\\
+\midrule
+OLS         &       0.785&       1.000&       0.796&       1.000&       0.788&       1.000\\
+\addlinespace
+2SLS        &       0.132&       0.200&       0.223&       0.400&       0.449&       0.800\\
+\addlinespace
+CLR         &       0.132&       0.000&       0.223&       0.000&       0.449&       0.000\\
+\addlinespace
+LIML        &       0.132&       0.200&      -0.280&       0.000&       0.327&       0.400\\
+\addlinespace
+Lasso       &       0.243&       0.333&           .&           .&       0.236&       0.333\\
+\bottomrule
+\end{tabular}
+\end{table}
