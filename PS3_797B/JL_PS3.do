@@ -122,9 +122,9 @@ scalar lasso_error_`Q'_`i'=.
 }
 }
 }
-*store in matrix
 
 
+/// Generate variables with my scalars
 clear
 set obs 100
 
@@ -148,7 +148,6 @@ replace  `esp'_`v'_`Q'= `esp'_`v'_`Q'_`i' in `i'
 
 /// Lasso no instr 
 foreach Q in 1 10 20  { 
-
 
 cap drop  lasso_noinstr_`Q'
 gen lasso_noinstr_`Q'=.
