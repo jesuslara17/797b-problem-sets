@@ -4,6 +4,7 @@
 *Problem 1: weak first stage simulations - OLS, 2SLS, CLR, LIML and LASSO 
 
 /// Create program that generates our data
+clear
 
 cap program drop simulation
 program simulation, eclass
@@ -35,7 +36,7 @@ end
 ///////////////////////////////////
 ///////////////////////////////////
 
-
+set seed 12345
 
 forvalues i=1/100{
 
@@ -168,7 +169,7 @@ foreach Q in 1 10 20  {
 su `esp'_`v'_`Q', detail
 di r(mean)
 di r(p50)
-sca a_`esp'_`v'_`Q'= r(mean)
+sca a_`esp'_`v'_`Q'= r(mean)*100
 sca m_`esp'_`v'_`Q'= r(p50)
 
 }
@@ -194,8 +195,8 @@ mat table1_`Q'= (m_ols_bias_`Q', a_ols_error_`Q' \ m_iv_bias_`Q', a_iv_error_`Q'
 
 
 mat table1= (table1_1, table1_10, table1_20)
-mat rownames table1= "OLS" "2SLS" "CLR" "LIML" "Lasso"
-mat colnames table1= "Bias" "Type 1 Error" "Bias" "Type 1 Error" "Bias" "Type 1 Error"
+mat rownames table1= "OLS" "2SLS" "CLR" "LIML" "Lasso^a"
+mat colnames table1= "Bias" "Type 1 Error (\%)" "Bias" "Type 1 Error (\%)" "Bias" "Type 1 Error (\%)"
 
 mat list table1
 
@@ -204,7 +205,7 @@ cd "C:\Users\User\Documents\GitHub\797b-problem-sets\PS3_797B"
 
 
 
-esttab m(table1, fmt(%9.3f)) using "Table1B.tex", replace title(Different estimations) nomtitles booktabs gaps fragment
+esttab m(table1, fmt(%9.2f)) using "Table1B.tex", replace title(Different estimations) nomtitles booktabs gaps fragment
 
 
 // Export numbers of Lasso don't picking any instrument
