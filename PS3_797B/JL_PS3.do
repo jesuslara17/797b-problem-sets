@@ -187,7 +187,7 @@ su lasso_noinstr_`Q'
 sca a_lasso_noinstr_`Q'=r(mean)
 }
 
-///_`Q'= (m_ols_bias_`Q', a_ols_error_`Q' \ m_iv_bias_`Q', a_iv_error_`Q' \ m_clr_bias_`Q', a_clr_error_`Q'\ m_liml_bias_`Q', a_liml_error_`Q'\ m_lasso_bias_`Q', a_lasso_error_`Q')
+table1_`Q'= (m_ols_bias_`Q', a_ols_error_`Q' \ m_iv_bias_`Q', a_iv_error_`Q' \ m_clr_bias_`Q', a_clr_error_`Q'\ m_liml_bias_`Q', a_liml_error_`Q'\ m_lasso_bias_`Q', a_lasso_error_`Q')
 
 }
 
