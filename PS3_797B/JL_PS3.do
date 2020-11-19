@@ -38,7 +38,7 @@ end
 
 set seed 12345
 
-forvalues i=1/100{
+forvalues i=1/1000{
 
 foreach Q in 1 10 20  { //Q values
 
@@ -127,10 +127,11 @@ scalar lasso_error_`Q'_`i'=.
 
 /// Generate variables with my scalars
 clear
-set obs 100
+set obs 1000
 
 global esps ols iv clr liml lasso
 global vars bias error
+
 foreach  esp in $esps{
 foreach v in $vars{
 foreach Q in 1 10 20  { 
@@ -139,7 +140,7 @@ foreach Q in 1 10 20  {
 cap drop  `esp'_`v'_`Q'
 gen `esp'_`v'_`Q'=.
  
-forvalues i=1/100{
+forvalues i=1/1000{
 replace  `esp'_`v'_`Q'= `esp'_`v'_`Q'_`i' in `i'
 } 
  
@@ -153,10 +154,11 @@ foreach Q in 1 10 20  {
 cap drop  lasso_noinstr_`Q'
 gen lasso_noinstr_`Q'=.
  
-forvalues i=1/100{
+forvalues i=1/1000{
 replace  lasso_noinstr_`Q'= lasso_noinstr_`Q'_`i' in `i'
 } 
 } 
+
 
 
 /// Get means and medians
@@ -185,11 +187,7 @@ su lasso_noinstr_`Q'
 sca a_lasso_noinstr_`Q'=r(mean)
 }
 
-/// Creat matrix table
-
-foreach Q in  1 10 20 {
-
-mat table1_`Q'= (m_ols_bias_`Q', a_ols_error_`Q' \ m_iv_bias_`Q', a_iv_error_`Q' \ m_clr_bias_`Q', a_clr_error_`Q'\ m_liml_bias_`Q', a_liml_error_`Q'\ m_lasso_bias_`Q', a_lasso_error_`Q')
+///_`Q'= (m_ols_bias_`Q', a_ols_error_`Q' \ m_iv_bias_`Q', a_iv_error_`Q' \ m_clr_bias_`Q', a_clr_error_`Q'\ m_liml_bias_`Q', a_liml_error_`Q'\ m_lasso_bias_`Q', a_lasso_error_`Q')
 
 }
 
@@ -205,7 +203,7 @@ cd "C:\Users\User\Documents\GitHub\797b-problem-sets\PS3_797B"
 
 
 
-esttab m(table1, fmt(%9.2f)) using "Table1B.tex", replace title(Different estimations) nomtitles booktabs gaps fragment
+esttab m(table1, fmt(%9.3f)) using "Table1B.tex", replace title(Different estimations) nomtitles booktabs gaps fragment
 
 
 // Export numbers of Lasso don't picking any instrument
