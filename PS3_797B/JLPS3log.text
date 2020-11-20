@@ -1,0 +1,197 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:\Users\User\Documents\GitHub\797b-problem-sets\PS3_797B\JLPS3log.text
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}19 Nov 2020, 19:29:21
+
+{com}. do "C:\Users\User\AppData\Local\Temp\STD3078_000000.tmp"
+{txt}
+{com}. //// 797B Problem Set 3 /////
+> ////// Jesús Lara    ////////
+> 
+. *Problem 1: weak first stage simulations - OLS, 2SLS, CLR, LIML and LASSO 
+. 
+. /// Create program that generates our data
+> clear
+{txt}
+{com}. 
+. cap program drop simulation
+{txt}
+{com}. program simulation, eclass
+{txt}  1{com}. args Q
+{txt}  2{com}. 
+. clear
+{txt}  3{com}. cap drop eta eps
+{txt}  4{com}. drawnorm eta eps, n(1000) cov (1, 0.8 \ 0.8, 1)
+{txt}  5{com}. 
+. forvalues j=1/`Q'{c -(}
+{txt}  6{com}. cap drop z_`j'
+{txt}  7{com}. gen z_`j'= rnormal(0,1) 
+{txt}  8{com}. {c )-}
+{txt}  9{com}. 
+. cap drop x 
+{txt} 10{com}. gen x=0.1*z_1+eps
+{txt} 11{com}. cap drop y
+{txt} 12{com}. gen y=x+eta 
+{txt} 13{com}. 
+. end
+{txt}
+{com}. 
+. /// Test: generate estimators, no loop
+> 
+. 
+. ///////////////////////////////////
+> ///////////////////////////////////
+> ///////////////////////////////////
+> /// Loop 100 times/////////////////
+> ///////////////////////////////////
+> ///////////////////////////////////
+> 
+. set seed 12345
+{txt}
+{com}. 
+. forvalues i=1/1000{c -(}
+{txt}  2{com}. 
+. foreach Q in 1 10 20  {c -(} //Q values
+{txt}  3{com}. 
+. di "iteration `i' for Q=`Q'" //will display the interation and Q value 
+{txt}  4{com}. 
+. quiet{c -(}
+{txt}  5{com}. simulation `Q'
+{txt}  6{com}. 
+. /// OLS
+> regress y x, robust
+{txt}  7{com}. *bias:
+. sca ols_bias_`Q'_`i'= _b[x]-1
+{txt}  8{com}. * Type 1 error? 1 if yes 0 if not
+. test x=1
+{txt}  9{com}. if r(p)<0.05{c -(}
+{txt} 10{com}. scalar ols_error_`Q'_`i'=1
+{txt} 11{com}. {c )-}
+{txt} 12{com}. else{c -(}
+{txt} 13{com}. scalar ols_error_`Q'_`i'=0
+{txt} 14{com}. {c )-}
+{txt} 15{com}. 
+. /// 2SLS 
+> ivreg2 y (x=z_*), robust 
+{txt} 16{com}. *bias:
+. sca iv_bias_`Q'_`i'=_b[x]-1
+{txt} 17{com}. * Type 1 error? 1 if yes 0 if not
+. test x=1
+{txt} 18{com}. if r(p)<0.05{c -(}
+{txt} 19{com}. scalar iv_error_`Q'_`i'=1
+{txt} 20{com}. {c )-}
+{txt} 21{com}. else{c -(}
+{txt} 22{com}. scalar iv_error_`Q'_`i'=0
+{txt} 23{com}. {c )-}
+{txt} 24{com}. 
+. /// CLR weakiv
+> quiet ivreg2 y (x=z_*), robust 
+{txt} 25{com}. sca clr_bias_`Q'_`i'=_b[x]-1
+{txt} 26{com}. 
+. weakiv, null(1)
+{txt} 27{com}. if e(clr_p)<0.05{c -(}
+{txt} 28{com}. scalar clr_error_`Q'_`i'=1
+{txt} 29{com}. {c )-}
+{txt} 30{com}. else{c -(}
+{txt} 31{com}. scalar clr_error_`Q'_`i'=0
+{txt} 32{com}. {c )-}
+{txt} 33{com}. 
+. /// LIML
+> 
+. ivreg2  y (x=z_*), robust liml
+{txt} 34{com}. sca liml_bias_`Q'_`i'= _b[x]-1
+{txt} 35{com}. 
+. test x=1
+{txt} 36{com}. if r(p)<0.05{c -(}
+{txt} 37{com}. scalar liml_error_`Q'_`i'=1
+{txt} 38{com}. {c )-}
+{txt} 39{com}. else{c -(}
+{txt} 40{com}. scalar liml_error_`Q'_`i'=0
+{txt} 41{com}. {c )-}
+{txt} 42{com}. 
+. 
+. /// Lasso 
+> poivregress y (x=z_*)
+{txt} 43{com}. 
+. if e(k_inst_sel)>=1{c -(}
+{txt} 44{com}. sca lasso_noinstr_`Q'_`i'=0
+{txt} 45{com}. 
+. sca lasso_bias_`Q'_`i'= _b[x]-1
+{txt} 46{com}. test x=1
+{txt} 47{com}. if r(p)<0.05{c -(}
+{txt} 48{com}. scalar lasso_error_`Q'_`i'=1
+{txt} 49{com}. {c )-}
+{txt} 50{com}. else{c -(}
+{txt} 51{com}. scalar lasso_error_`Q'_`i'=0
+{txt} 52{com}. {c )-}
+{txt} 53{com}. {c )-}
+{txt} 54{com}. else {c -(}
+{txt} 55{com}. sca lasso_noinstr_`Q'_`i'=1
+{txt} 56{com}. sca lasso_bias_`Q'_`i'= .
+{txt} 57{com}. scalar lasso_error_`Q'_`i'=.
+{txt} 58{com}. 
+. {c )-}
+{txt} 59{com}. {c )-}
+{txt} 60{com}. {c )-}
+{txt} 61{com}. {c )-}
+iteration 1 for Q=1
+iteration 1 for Q=10
+iteration 1 for Q=20
+iteration 2 for Q=1
+iteration 2 for Q=10
+iteration 2 for Q=20
+iteration 3 for Q=1
+iteration 3 for Q=10
+iteration 3 for Q=20
+iteration 4 for Q=1
+iteration 4 for Q=10
+iteration 4 for Q=20
+iteration 5 for Q=1
+iteration 5 for Q=10
+iteration 5 for Q=20
+iteration 6 for Q=1
+iteration 6 for Q=10
+iteration 6 for Q=20
+iteration 7 for Q=1
+iteration 7 for Q=10
+iteration 7 for Q=20
+iteration 8 for Q=1
+iteration 8 for Q=10
+iteration 8 for Q=20
+iteration 9 for Q=1
+iteration 9 for Q=10
+iteration 9 for Q=20
+iteration 10 for Q=1
+iteration 10 for Q=10
+iteration 10 for Q=20
+iteration 11 for Q=1
+iteration 11 for Q=10
+iteration 11 for Q=20
+iteration 12 for Q=1
+iteration 12 for Q=10
+iteration 12 for Q=20
+iteration 13 for Q=1
+iteration 13 for Q=10
+iteration 13 for Q=20
+iteration 14 for Q=1
+iteration 14 for Q=10
+iteration 14 for Q=20
+iteration 15 for Q=1
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1), local:r(1);}
+
+end of do-file
+
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1), local:r(1);}
+
+{com}. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}C:\Users\User\Documents\GitHub\797b-problem-sets\PS3_797B\JLPS3log.text
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}19 Nov 2020, 19:30:18
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

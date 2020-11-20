@@ -187,7 +187,7 @@ su lasso_noinstr_`Q'
 sca a_lasso_noinstr_`Q'=r(mean)
 }
 
-table1_`Q'= (m_ols_bias_`Q', a_ols_error_`Q' \ m_iv_bias_`Q', a_iv_error_`Q' \ m_clr_bias_`Q', a_clr_error_`Q'\ m_liml_bias_`Q', a_liml_error_`Q'\ m_lasso_bias_`Q', a_lasso_error_`Q')
+mat table1_`Q'= (m_ols_bias_`Q', a_ols_error_`Q' \ m_iv_bias_`Q', a_iv_error_`Q' \ m_clr_bias_`Q', a_clr_error_`Q'\ m_liml_bias_`Q', a_liml_error_`Q'\ m_lasso_bias_`Q', a_lasso_error_`Q')
 
 }
 
@@ -196,7 +196,7 @@ mat table1= (table1_1, table1_10, table1_20)
 mat rownames table1= "OLS" "2SLS" "CLR" "LIML" "Lasso^a"
 mat colnames table1= "Bias" "Type 1 Error (\%)" "Bias" "Type 1 Error (\%)" "Bias" "Type 1 Error (\%)"
 
-mat list table1
+
 
 
 cd "C:\Users\User\Documents\GitHub\797b-problem-sets\PS3_797B"
