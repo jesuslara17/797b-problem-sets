@@ -266,6 +266,58 @@ line estimate event, lcolor(black) || line min95 event, lcolor(gray) lpattern(da
 ****** PART 4*******
 ********************
 
+
+
+use ${home}/DDCGdata_final, clear
+
+egen countrynum= group(country_name)
+gen tdemoc=.
+replace tdemoc=1 if dem==1 & l.dem==0
+order tdemoc countrynum year
+
+//// Identify treated units
+
+
+gen tunit=.
+quiet su countrynum 
+local mincountry=r(min)
+local maxcountry=r(max)
+
+forvalues i=`mincountry'/`maxcountry'{
+quiet  su year if countrynum==`i' & tdemoc==1
+
+
+if r(N)==1{
+di `i'
+di "Only one transition to democracy"
+quiet  su year if countrynum==`i' & tdemoc==1
+quiet su dem if year >=r(mean) & countrynum==`i'
+
+if r(min)==r(max){
+di " `i' is treated unit"
+quietly replace tunit=1 if countrynum==`i'
+}
+
+else{
+
+di "Experienced a reversal"
+quietly replace tunit=0 if countrynum==`i'
+
+}
+}
+
+else {
+
+quietly replace tunit=0 if countrynum==`i'
+}
+}
+
+/// Identify clean controls foreach treated unit
+
+
+su year if countrynum==146 & tdemoc==1
+su dem if year>=r(mean)
+
 ****** 4 (a)********
 ********************
 
