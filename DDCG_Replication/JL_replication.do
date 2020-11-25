@@ -2,6 +2,8 @@
 ///  Critical Replication and extension of   ///
 ///DDCG by Acemoglu, Naidu, Restrepo & Robinson///
 
+clear all
+
 global home "C:/Users/User/Documents/GitHub/797b-problem-sets/DDCG_Replication"
 global tables "$home/tables"
 global figures "$home/figures"
@@ -51,76 +53,37 @@ esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-ru
 // Replication of table 5/////
 //////////////////////////////
 
-use DDCGdata_final, clear
+
+// 2) Now generate our dependent variables: \Delta y^s_ct= y^s_ct -y_t-1
+// t: period of democratization, s: years after democratization 
+// We consider: 15 years before democratization, 30 years after democratizationuse DDCGdata_final, clear
 
 // Generate Treatment democracy variable td
-g tdemoc=.  
+
+
+
+// 1) 4 lags in GDP. These will be covariates in our regression
+gen tdemoc=.  
 replace tdemoc=1 if dem==1 & l.dem==0 // captures the exact moment when a country transitions to democracy
 replace tdemoc=0 if dem==0 & l.dem==0 
-
-
 // 1) 4 lags in GDP. These will be covariates in our regression
 forvalues i=1/4{
 gen lag`i'y=l`i'.y
 }
-// 2) Now generate our dependent variables: \Delta y^s_ct= y^s_ct -y_t-1
-// t: period of democratization, s: years after democratization 
-// We consider: 15 years before democratization, 30 years after democratization
-// Democratization happens at g=15. So s=15-g 
 
-gen ydep0=L15.y-L.y
-gen ydep1=L14.y-L.y
-gen ydep2=L13.y-L.y
-gen ydep3=L12.y-L.y
-gen ydep4=L11.y-L.y
-gen ydep5=L10.y-L.y
-gen ydep6=L9.y-L.y
-gen ydep7=L8.y-L.y
-gen ydep8=L7.y-L.y
-gen ydep9=L6.y-L.y
-gen ydep10=L5.y-L.y
-gen ydep11=L4.y-L.y
-gen ydep12=L3.y-L.y
-gen ydep13=L2.y-L.y
-gen ydep14=0                        
-
-/* Creates leads of GDP */
-gen ydep15=y-L.y
-gen ydep16=F1.y-L.y
-gen ydep17=F2.y-L.y
-gen ydep18=F3.y-L.y
-gen ydep19=F4.y-L.y
-gen ydep20=F5.y-L.y
-gen ydep21=F6.y-L.y
-gen ydep22=F7.y-L.y
-gen ydep23=F8.y-L.y
-gen ydep24=F9.y-L.y
-gen ydep25=F10.y-L.y
-gen ydep26=F11.y-L.y
-gen ydep27=F12.y-L.y
-gen ydep28=F13.y-L.y
-gen ydep29=F14.y-L.y
-gen ydep30=F15.y-L.y
-gen ydep31=F16.y-L.y
-gen ydep32=F17.y-L.y
-gen ydep33=F18.y-L.y
-gen ydep34=F19.y-L.y
-gen ydep35=F20.y-L.y
-gen ydep36=F21.y-L.y
-gen ydep37=F22.y-L.y
-gen ydep38=F23.y-L.y
-gen ydep39=F24.y-L.y
-gen ydep40=F25.y-L.y
-gen ydep41=F26.y-L.y
-gen ydep42=F27.y-L.y
-gen ydep43=F28.y-L.y
-gen ydep44=F29.y-L.y
-gen ydep45=F30.y-L.y        
+forvalues i=0/15{
+local k =15-`i'
+gen ydep`i'=L`k'.y-L.y
+}
 
 
+forvalues i=16/45{
+local k=`i'-15
+gen ydep`i'=F`k'.y-L.y
+}
 
-//Remove observations of democracies after the democratization ? 
 keep if tdemoc!=.
+
 // Question: by doing this we are removing all observations of countries that democratized after the democratization... how are 
 set seed 12345                       
 
@@ -239,9 +202,65 @@ esttab dr* using "$tables/T5_dr.tex", replace varlabels (dr "Avg. effect on log 
 ****** PART 2*******
 ********************
 
+/// Preliminary, totally not sure!
+
+use DDCGdata_final, clear
+
+forvalues i=1/4{
+gen lag`i'y=l`i'.y
+}
+
+forvalues i=0/14{
+local k =15-`i'
+gen yddep`i'=L`k'.y
+}
+gen yddep15=y 
+
+forvalues i=16/45{
+local k=`i'-15
+gen yddep`i'=F`k'.y
+}
+
+/// No lags 
+forvalues s=0/45{
+quiet xtreg yddep`s' dem i.yy*, fe r cluster(wbcode2)
+eststo did`s'
+}
+
+coefplot (did*, lcolor(black) mcolor(black)), vertical keep(dem)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10) 
+graph export ${figures}/part2a.png, as(png) replace
+
+/// 4 lags
+forvalues s=0/45{
+quiet xtreg yddep`s' dem i.yy* l(1/4)y, fe r cluster(wbcode2)
+eststo ldid`s'
+}
+
+coefplot (ldid*, lcolor(black) mcolor(black)), vertical keep(dem)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10)  
+graph export "$figures/part2b.png", as(png) replace
+
+ 
+
 ********************
 ****** PART 3*******
 ********************
+
+/// Replicate the figures?
+
+
+foreach type in psr dr{
+
+use "$auxdata/`type'.dta",clear
+
+gen event=.
+
+forvalues i=1/46{
+local k=`i'-16
+replace event=`k' in `i'
+}
+
+line estimate event, lcolor(black) || line min95 event, lcolor(gray) lpattern(dash) || line max95 event, lcolor(gray) lpattern(dash) ytitle(Change in GDP per capita log points) xlabel(#10) xtitle(Years around democratization) scheme(s1color) legend(off) yline(0, lpattern(dash))
+}
 
 ********************
 ****** PART 4*******
