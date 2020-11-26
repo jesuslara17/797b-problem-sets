@@ -427,8 +427,8 @@ reshape wide treatment_* tdemoc y dem, i(country_name) j(year)
 ****** PART 5*******
 ********************
 
-drop if tunit==.
-drop if countrynum==18
+
+
 
 
 xtset countrynum year
