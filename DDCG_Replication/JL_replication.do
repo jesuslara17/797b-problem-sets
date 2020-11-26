@@ -202,7 +202,7 @@ esttab dr* using "$tables/T5_dr.tex", replace varlabels (dr "Avg. effect on log 
 ****** PART 2*******
 ********************
 
-/// Preliminary, totally not sure!
+/// Preliminary,  not sure!
 
 use DDCGdata_final, clear
 
@@ -247,6 +247,8 @@ graph export "$figures/part2b.png", as(png) replace
 
 /// Replicate the figures?
 
+* ¯\_(ツ)_/¯
+
 
 foreach type in psr dr{
 
@@ -270,14 +272,13 @@ line estimate event, lcolor(black) || line min95 event, lcolor(gray) lpattern(da
 
 use ${home}/DDCGdata_final, clear
 
+// The code below identifies treated units (countries that transitioned to democracy with no reversals) and the clean controls associated to each treated unit (countries that did not have a transition before t0 and at least 20 year after)
+// We will use tunit for part 6, so it will assign a missing value to all countries which experienced a kind of transition 
+
 egen countrynum= group(country_name)
 gen tdemoc=.
 replace tdemoc=1 if dem==1 & l.dem==0
 order tdemoc countrynum year
-
-//// Identify treated units
-
-
 gen tunit=.
 quiet su countrynum 
 local mincountry=r(min)
@@ -285,52 +286,154 @@ local maxcountry=r(max)
 
 forvalues i=`mincountry'/`maxcountry'{
 quiet  su year if countrynum==`i' & tdemoc==1
-
-
 if r(N)==1{
 di `i'
 di "Only one transition to democracy"
-quiet  su year if countrynum==`i' & tdemoc==1
+local t0=r(mean)
 quiet su dem if year >=r(mean) & countrynum==`i'
 
 if r(min)==r(max){
 di " `i' is treated unit"
 quietly replace tunit=1 if countrynum==`i'
+
+
+gen treatment_`i'_=.
+forvalues j=`mincountry'/`maxcountry'{
+if `j'==`i'{
+quietly replace treatment_`i'_=0 if year<`t0' & countrynum==`j'
+quietly replace treatment_`i'_=1 if year>=`t0' & countrynum==`j'
 }
 
 else{
+local t20= `t0'+20
+quietly su dem if countrynum==`j' & year <=`t20'
+if r(min)==r(max){
 
+// di "`j' is a clean control of `i'"
+quietly replace treatment_`i'_=0 if countrynum==`j'
+}
+else{
+quietly replace treatment_`i'_=. if countrynum==`j'
+}
+}
+}
+}
+else{
 di "Experienced a reversal"
-quietly replace tunit=0 if countrynum==`i'
-
+//quietly replace tunit=. if countrynum==`i'
 }
 }
 
 else {
+di "`i' had more than one transition to democracy"
+//quietly replace tunit=. if countrynum==`i'
+}
+}
 
+forvalues i=`mincountry'/`maxcountry'{
+quiet su dem if countrynum==`i'
+if r(max)==r(min){
+di "`i' is a clean control: same political regime"
 quietly replace tunit=0 if countrynum==`i'
 }
+else{
+}
 }
 
-/// Identify clean controls foreach treated unit
-
-
-su year if countrynum==146 & tdemoc==1
-su dem if year>=r(mean)
-
-****** 4 (a)********
+****** 4 (a) *******
 ********************
 
-****** 4 (b)********
-********************
+/// Proceed with estimation...
+// Preliminary code
+*List of all treated units, how to get it?
 
-****** 4 (c)********
-********************
 
+//Store countrynum s.t. tunit=1 in a matrix
+
+quiet su countrynum 
+local mincountry=r(min)
+local maxcountry=r(max)
+mat T=.
+forvalues k=`mincountry'/`maxcountry'{
+su tunit if countrynum==`k'
+if r(mean)==1{
+if T[1,1]==. {
+mat T=(`k')
+}
+else {
+mat T=(T \ `k')
+}
+}
+else {
+}
+}
+
+
+
+
+
+xtset countrynum year
+
+global treated treatment_*
+
+foreach var of varlist treatment_*{
+preserve
+quietly drop if `var'==.
+
+quietly xtreg y `var' i.yy* l(1/4)y, fe cluster(countrynum) 
+
+if "`var'"=="treatment_18_"{
+mat b=(r(table)[1,1])
+mat bmin95= (r(table)[1,4])
+mat bmax95= (r(table)[1,5])  
+
+}
+
+else {
+mat b=(b \ r(table)[1,1])
+mat bmin95= (bmin95 \ r(table)[1,4])
+mat bmax95= (bmax95 \ r(table)[1,5])
+} 
+
+restore
+}
+
+svmat T 
+svmat b
+
+hist b
+
+// b= r(table)[1,1]
+// se= r(table) [1,2]
+// bmin95= r(table)[1,4]
+// bmax95== r(table)[1,5]  
+
+
+****** 4 (b) ********
+*********************
+
+// Ferman & Pinto 
+
+****** 4 (c) ********
+*********************
+
+// Stack in wide format? 
+
+keep countrynum country_name year tdemoc dem treatment* y 
+
+reshape wide treatment_* tdemoc y dem, i(country_name) j(year) 
 
 ********************
 ****** PART 5*******
 ********************
+
+drop if tunit==.
+drop if countrynum==18
+
+
+xtset countrynum year
+synth_runner y y(1960) y(1961) y(1962) y(1963) y(1964) y(1965) y(1966) y(1967) y(1968) y(1969) y(1970), d(tunit)
+
 
 ********************
 ****** PART 6*******
