@@ -26,7 +26,7 @@ xtset wbcode2 year
 
 /// Replication of table 2
 
-
+/*
 quiet {
 xtreg y dem l.y i.yy*, fe r cluster(wbcode2) 
 eststo T2_1
@@ -48,7 +48,7 @@ eststo T2_3a
 esttab T2_1 T2_2 T2_3 using "$tables/Table2.tex", keep(dem  L.y  L2.y  L3.y  L4.y) varlabels(dem "Democracy" L.y "Log GDP, first lag" L2.y "Log GDP, second lag" L3.y "Log GDP, third lag" L4.y "Log GDP, fourth lag") fragment nonum noobs nonotes mlabels("(1)" "(2)" "(3)") b(3) se ty replace nostar  wrap gaps
 
 esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-run effect of democracy" persistence "Persistence") fragment nonum nonotes  b(3) se ty append nostar nomtitles nolines wrap gaps
-
+*/
 ///////////////////////////////
 // Replication of table 5/////
 //////////////////////////////
@@ -62,7 +62,7 @@ esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-ru
 
 
 
-// 1) 4 lags in GDP. These will be covariates in our regression
+
 gen tdemoc=.  
 replace tdemoc=1 if dem==1 & l.dem==0 // captures the exact moment when a country transitions to democracy
 replace tdemoc=0 if dem==0 & l.dem==0 
@@ -82,6 +82,8 @@ local k=`i'-15
 gen ydep`i'=F`k'.y-L.y
 }
 
+
+order country_name tdemoc year y ydep*
 keep if tdemoc!=.
 
 // Question: by doing this we are removing all observations of countries that democratized after the democratization... how are 
@@ -206,37 +208,45 @@ esttab dr* using "$tables/T5_dr.tex", replace varlabels (dr "Avg. effect on log 
 
 use DDCGdata_final, clear
 
+gen tdemoc=.  
+replace tdemoc=1 if dem==1 & l.dem==0 // captures the exact moment when a country transitions to democracy
+replace tdemoc=0 if dem==0 & l.dem==0 
+// 1) 4 lags in GDP. These will be covariates in our regression
 forvalues i=1/4{
 gen lag`i'y=l`i'.y
 }
 
-forvalues i=0/14{
+forvalues i=0/15{
 local k =15-`i'
-gen yddep`i'=L`k'.y
+gen ydep`i'=L`k'.y-L.y
 }
-gen yddep15=y 
+
 
 forvalues i=16/45{
 local k=`i'-15
-gen yddep`i'=F`k'.y
+gen ydep`i'=F`k'.y-L.y
 }
+
+
+order country_name tdemoc year y ydep*
+keep if tdemoc!=.
 
 /// No lags 
 forvalues s=0/45{
-quiet xtreg yddep`s' dem i.yy*, fe r cluster(wbcode2)
+reg ydep`s' tdemoc, cluster(wbcode2)
 eststo did`s'
 }
 
-coefplot (did*, lcolor(black) mcolor(black)), vertical keep(dem)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10) 
+coefplot (did*, lcolor(black) mcolor(black)), vertical keep(tdemoc)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10) 
 graph export ${figures}/part2a.png, as(png) replace
 
 /// 4 lags
 forvalues s=0/45{
-quiet xtreg yddep`s' dem i.yy* l(1/4)y, fe r cluster(wbcode2)
+quiet reg ydep`s' tdemoc  lag*, cluster(wbcode2)
 eststo ldid`s'
 }
 
-coefplot (ldid*, lcolor(black) mcolor(black)), vertical keep(dem)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10)  
+coefplot (ldid*, lcolor(black) mcolor(black)), vertical keep(tdemoc)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10)  
 graph export "$figures/part2b.png", as(png) replace
 
  
