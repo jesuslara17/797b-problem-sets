@@ -1,6 +1,6 @@
-/// 			797B Jesús Lara				 ///
-///  Critical Replication and extension of   ///
-///DDCG by Acemoglu, Naidu, Restrepo & Robinson///
+//  		 ☭ 	797B Jesús Lara	☭	 ///
+/// 	Critical Replication and extension of   ///
+///DDCG by Acemoglu, Naidu, Restrepo & Robinson (2018)///
 
 clear all
 
