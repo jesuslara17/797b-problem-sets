@@ -47,24 +47,28 @@ order f10 lag1y ydep25 tdemoc year country_name
 
 // Diff-in-diff with regression and manually
 reg ydep25 tdemoc, cluster(wbcode2)
+sca dd_reg=_b[tdemoc]
 
-
-
-su lag1y if tdemoc==0
+// Get means pre and post for treated and non-treated
+quiet su lag1y if tdemoc==0
 sca ypre0=r(mean)
-su lag1y if tdemoc==1
+quiet su lag1y if tdemoc==1
 sca ypre1=r(mean)
 
-su f10 if tdemoc==0
+quiet su f10 if tdemoc==0
 sca ypost0=r(mean)
-su f10 if tdemoc==1
+quiet su f10 if tdemoc==1
 sca ypost1=r(mean)
 
 sca DD=(ypost1-ypost0)-(ypre1-ypre0)
 di DD
+di dd_reg
+
+
+*They are the equal. It should be obvious... but not for me! ☭ ¯\_(ツ)_/¯ ☭
+
 
 sca DD=(ypost1-ypre1)-(ypost0-ypre0)
 di DD
-
-reg ydep25 tdemoc lag*, cluster(wbcode2)
+di ddreg
 
