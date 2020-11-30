@@ -62,7 +62,7 @@ esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-ru
 
 
 
-
+/*
 gen tdemoc=.  
 replace tdemoc=1 if dem==1 & l.dem==0 // captures the exact moment when a country transitions to democracy
 replace tdemoc=0 if dem==0 & l.dem==0 
@@ -199,12 +199,12 @@ eststo dr7
 esttab dr* using "$tables/T5_dr.tex", replace varlabels (dr "Avg. effect on log GDP") fragment nostar nonum nonotes se nomtitles nolines wrap ty  noobs b(3)
 
 
-
+*/
 ********************
 ****** PART 2*******
 ********************
 
-/// Preliminary,  not sure!
+/// Now it is correct
 
 use DDCGdata_final, clear
 
@@ -231,24 +231,65 @@ gen ydep`i'=F`k'.y-L.y
 order country_name tdemoc year y ydep*
 keep if tdemoc!=.
 
-/// No lags 
-forvalues s=0/45{
-reg ydep`s' tdemoc, cluster(wbcode2)
-eststo did`s'
-}
-
-coefplot (did*, lcolor(black) mcolor(black)), vertical keep(tdemoc)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10) 
-graph export ${figures}/part2a.png, as(png) replace
-
-/// 4 lags
+/// 4 lags 
 forvalues s=0/45{
 quiet reg ydep`s' tdemoc  lag*, cluster(wbcode2)
-eststo ldid`s'
+if `s'==0{
+mat ests=(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+}
+else{
+mat ests=ests\(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+mat colnames ests="b" "ll" "ul"
+}
 }
 
-coefplot (ldid*, lcolor(black) mcolor(black)), vertical keep(tdemoc)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10)  
+drop ests*
+svmat ests
+
+cap drop yad
+gen yad=. 
+forvalues i=0/45{
+local k=`i'-14
+local j=`i'+1
+replace yad=`k' in `j'
+}
+
+line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off)
+graph export "$figures/part2a.png", as(png) replace
+
+
+
+/// No lags
+forvalues s=0/45{
+quiet reg ydep`s' tdemoc, cluster(wbcode2)
+if `s'==0{
+mat ests=(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+}
+else{
+mat ests=ests\(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+mat colnames ests="b" "ll" "ul"
+}
+}
+
+drop ests*
+svmat ests
+cap drop yad
+gen yad=. 
+forvalues i=0/45{
+local k=`i'-14
+local j=`i'+1
+replace yad=`k' in `j'
+}
+
+line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off) ylabel(#6) 
 graph export "$figures/part2b.png", as(png) replace
 
+
+
+/*
+coefplot (ldid*, lcolor(black) mcolor(black)), vertical keep(tdemoc)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10)  
+graph export "$figures/part2b.png", as(png) replace
+*/ 
  
 
 ********************
@@ -272,6 +313,7 @@ replace event=`k' in `i'
 }
 
 line estimate event, lcolor(black) || line min95 event, lcolor(gray) lpattern(dash) || line max95 event, lcolor(gray) lpattern(dash) ytitle(Change in GDP per capita log points) xlabel(#10) xtitle(Years around democratization) scheme(s1color) legend(off) yline(0, lpattern(dash))
+graph export  "$figures/part3`type'.png", replace
 }
 
 ********************
@@ -284,6 +326,7 @@ use ${home}/DDCGdata_final, clear
 
 // The code below identifies treated units (countries that transitioned to democracy with no reversals) and the clean controls associated to each treated unit (countries that did not have a transition before t0 and at least 20 year after)
 // We will use tunit for part 6, so it will assign a missing value to all countries which experienced a kind of transition 
+// Este loop me quedó bien culey!!! ¯\_(ツ)_/¯
 
 egen countrynum= group(country_name)
 gen tdemoc=.
@@ -300,30 +343,32 @@ if r(N)==1{
 di `i'
 di "Only one transition to democracy"
 local t0=r(mean)
-quiet su dem if year >=r(mean) & countrynum==`i'
+quiet su dem if year >=`t0' & countrynum==`i'
 
 if r(min)==r(max){
 di " `i' is treated unit"
 quietly replace tunit=1 if countrynum==`i'
 
+//Event i
+gen event_`i'_=.
+// Prepare dependent variables for regressions. I will consider 10, 15 and 19 years after democratization 
 
-gen treatment_`i'_=.
 forvalues j=`mincountry'/`maxcountry'{
 if `j'==`i'{
-quietly replace treatment_`i'_=0 if year<`t0' & countrynum==`j'
-quietly replace treatment_`i'_=1 if year>=`t0' & countrynum==`j'
+quietly replace event_`i'_=0 if year<`t0' & countrynum==`j'
+quietly replace event_`i'_=1 if year==`t0' & countrynum==`j'
 }
 
 else{
 local t20= `t0'+20
 quietly su dem if countrynum==`j' & year <=`t20'
-if r(min)==r(max){
+if r(max)==0{
 
 // di "`j' is a clean control of `i'"
-quietly replace treatment_`i'_=0 if countrynum==`j'
+quietly replace event_`i'_=0 if countrynum==`j'
 }
 else{
-quietly replace treatment_`i'_=. if countrynum==`j'
+quietly replace event_`i'_=. if countrynum==`j'
 }
 }
 }
@@ -339,7 +384,39 @@ di "`i' had more than one transition to democracy"
 //quietly replace tunit=. if countrynum==`i'
 }
 }
+quietly replace tunit=0 if tunit==.
 
+save "DDCG_with_events.dta",replace
+
+// Generate variables and prepare events datasets
+
+forvalues i=1/4{
+gen lag`i'y=l`i'.y
+}
+
+// Gen all leads, we may only use a couple 
+forvalues i=16/45{
+local k=`i'-15
+gen ydep`i'=F`k'.y-L.y
+}
+
+
+foreach var of varlist event_*{
+preserve 
+drop if `var'==.
+keep `var' ydep* country_name countrynum dem tdemoc lag* year y
+order year countrynum country_name `var' tdemoc dem y ydep* lag* 
+quiet su year if `var'==1
+local t0=r(mean)
+keep if year==`t0'
+save "$auxdata/`var'.dta", replace
+restore
+}
+// One wide data set for each event
+
+
+
+/*
 forvalues i=`mincountry'/`maxcountry'{
 quiet su dem if countrynum==`i'
 if r(max)==r(min){
@@ -349,6 +426,8 @@ quietly replace tunit=0 if countrynum==`i'
 else{
 }
 }
+*/
+
 
 ****** 4 (a) *******
 ********************
@@ -378,40 +457,44 @@ else {
 }
 }
 
+use DDCG_with_events, clear 
 
+*** NO, error: corregir: estima con ydep25-29 como variable dependiente (15-19 años post), y después nlcom de esos 4 coeficientes para obtener el promedio 15-19. 
 
-
-
-xtset countrynum year
-
-global treated treatment_*
-
-foreach var of varlist treatment_*{
-preserve
-quietly drop if `var'==.
-
-quietly xtreg y `var' i.yy* l(1/4)y, fe cluster(countrynum) 
-
-if "`var'"=="treatment_18_"{
-mat b=(r(table)[1,1])
-mat bmin95= (r(table)[1,4])
-mat bmax95= (r(table)[1,5])  
-
+foreach var of varlist event_*{
+use "$auxdata/`var'.dta",replace
+foreach s of numlist 25 30 34 {
+quiet su ydep`s' if `var'==1
+di "`var'" `s' 
+di r(mean)
+if r(mean)!=.{ 
+quiet reg ydep`s' `var' lag*, cluster(countrynum)
+if r(table)[5,1]==. | r(table)[6,1]==.{
+di "`var' `s' colinearity "
 }
-
+else{
+if "`var'"=="event_18_"{
+mat ests`s'=(_b[`var'], r(table)[5,1], r(table)[6,1])
+}
+else{
+mat ests`s'=ests`s' \ (_b[`var'], r(table)[5,1], r(table)[6,1])
+}
+}
+}
 else {
-mat b=(b \ r(table)[1,1])
-mat bmin95= (bmin95 \ r(table)[1,4])
-mat bmax95= (bmax95 \ r(table)[1,5])
-} 
-
-restore
+di "ydep`s' is a missing value in `var'"
+}
+}
 }
 
-svmat T 
-svmat b
+foreach s of numlist 25 30 34 {
+local k=`s'-15
+svmat ests`s'
 
-hist b
+hist ests`s'1, title (Effect of Democratization on Growth: Event Analysis) subtitle(`k' years after democratization) freq w(8) scheme(s1color) xtitle(Estimate) xlabel(#20) 
+graph export "$figures/4a_`s'.png",replace
+}
+
 
 // b= r(table)[1,1]
 // se= r(table) [1,2]
@@ -428,11 +511,23 @@ hist b
 *********************
 
 // Stack in wide format? 
+use DDCG_with_events, clear 
 
-keep countrynum country_name year tdemoc dem treatment* y 
+foreach var of varlist event_*{
+if "`var'"=="event_18_"{
+use "$auxdata/`var'.dta",replace
+}
+else{
+append using "$auxdata/`var'.dta"
+}
+}
+order year country_name event*
 
-reshape wide treatment_* tdemoc y dem, i(country_name) j(year) 
+foreach var of varlist event_*{
+replace `var'=0 if `var'==.
 
+}
+reg ydep20 i.dem i.event_* lag*
 ********************
 ****** PART 5*******
 ********************

@@ -68,7 +68,29 @@ di dd_reg
 *They are the equal. It should be obvious... but not for me! ☭ ¯\_(ツ)_/¯ ☭
 
 
-sca DD=(ypost1-ypre1)-(ypost0-ypre0)
-di DD
-di ddreg
+use "$auxdata/event_44_.dta", clear
+
+reg ydep30 event_44_ lag*, cluster(countrynum)
+
+use "$auxdata/event_183_.dta",clear
+
+forvalues s=25/29{
+
+reg ydep`s' event_183_
+eststo g`s'
+}
+
+suest g*
+
+nlcom (event183: [g25_mean]_b[event_183_]+[g26_mean]_b[event_183_]+[g27_mean]_b[event_183_]+[g28_mean]_b[event_183_]+[g29_mean]_b[event_183_])
+
+sca b_event183= r(b)[1,1]
+di b_event183
+
+//na. rowmeans 
+
+*** Stack in wide format
+
+
+
 
