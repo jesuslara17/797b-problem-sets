@@ -411,6 +411,7 @@ order year countrynum country_name `var' tdemoc dem y ydep* lag*
 quiet su year if `var'==1
 local t0=r(mean)
 keep if year==`t0'
+
 save "$auxdata/`var'.dta", replace
 restore
 }
@@ -523,19 +524,89 @@ graph export "$figures/4a.png",replace
 // Stack in wide format? 
 use DDCG_with_events, clear 
 
+
+// Generate FE
 foreach var of varlist event_*{
+use "$auxdata/`var'.dta", clear
+replace `var'=1 if `var'==0
+replace tdemoc=0 if tdemoc==.
+drop year
+sa "$auxdata/fe_`var'.dta", replace
+}
+
+/*
+local var event_18_
+use "$auxdata/fe_`var'.dta", clear
+local var event_19_
+append using "$auxdata/fe_`var'.dta"
+local var event_20_
+append using "$auxdata/fe_`var'.dta"
+*/
 use DDCG_with_events, clear 
+foreach var of varlist event_*{
+
 if "`var'"=="event_18_"{
-use "$auxdata/`var'.dta",replace
+use "$auxdata/fe_`var'.dta", clear
 }
 else{
-append using "$auxdata/`var'.dta"
+append using "$auxdata/fe_`var'.dta"
 }
+}
+
+foreach var of varlist event_*{
+replace `var'=0 if `var'==.
+}
+order event_*
+
+capture program drop  fe_event 
+program fe_event, eclass 
+forvalues s=30/33{
+local k= `s'-29
+quiet reg ydep`s' tdemoc lag*  event_*, cluster (countrynum)
+est sto r`k'
+if `s'==30{
+mat b=(_b[tdemoc])
+local v`k'=e(V)[1,1]
+} 
+else{
+mat b=(b, _b[tdemoc])
+local v`k'=e(V)[1,1]
+}
+}
+matrix V=J(4,4,1)
+matrix V[1,1]=`v1'
+matrix V[2,2]=`v2'
+matrix V[3,3]=`v3'
+matrix V[4,4]=`v4'
+matrix rownames V= "c1" "c2" "c3" "c4"
+mat list V
+mat list b
+*/
+ereturn post b V
+*ereturn post V
+end
+
+
+fe_event
+nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4])/4), post
+eststo avc   
+
+//bootstrap standard errors
+bootstrap _b: fe_event
+nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4])/4), post
+eststo avb
+
+esttab r* avc avb using "$tables/4c.tex", replace keep(tdemoc)  se nostar varlabels (tdemoc "Avg. effect on log GDP") b(3)   wrap nonotes ty mlabels("15 years" "16 years" "17 years" "18 years" "Av." "Av.(Bootstrap)")
+
+esttab r* av* using "$tables/4c.tex", replace keep(tdemoc) fragment se nostar varlabels (tdemoc "Avg. effect on log GDP") b(3) nomtitles nolines wrap ty
+
+varlabels (dr "Avg. effect on log GDP") fragment nostar nonum nonotes se nomtitles nolines wrap ty  noobs b(3)
+
 
 order year country_name event*
 
 foreach var of varlist event_*{
-replace `var'=0 if `var'==.
+replace `var'=1 if `var'==.
 
 }
 reg ydep20 i.dem i.event_* lag*
@@ -547,13 +618,13 @@ use DDCG_with_events, clear
 xtset countrynum year
 
 foreach var of varlist  event_*{
-
 preserve
+
 su year if `var'==1
 local t0 = r(mean)
 sca t0= r(mean)
 sca t10=t0-10
-su countrynum if `var'== 1
+quiet su countrynum if `var'== 1
 sca tcountry=r(mean)
 replace `var'=1 if `var'==. & countrynum==tcountry
 drop if `var'==.
@@ -617,23 +688,74 @@ restore
 
 *I will do the same alv
 
-use "$auxdata/event_18_.dta", clear
+local var event_20_   
+use "$auxdata/`var'.dta", clear
 
-merge 1:1 countrynum using "$auxdata\s1_event_18_.dta"
+merge 1:1 countrynum using "$auxdata/s1_`var'.dta"
 drop _merge
-merge 1:1 countrynum using "$auxdata\s2_event_18_.dta"
+merge 1:1 countrynum using "$auxdata/s2_`var'.dta"
 drop _merge
 
-replace s1w_event_18_=0 if s1w_event_18_==.
-replace s2w_event_18_=0 if s2w_event_18_==.
-replace s1w_event_18_=1 if event_18_==1
-replace s2w_event_18_=1 if event_18_==1
+replace s1w_`var'=0 if s1w_`var'==.
+replace s2w_`var'=0 if s2w_`var'==.
+replace s1w_`var'=1 if `var'==1
+replace s2w_`var'=1 if `var'==1
 
-reg ydep30 event_18_  [aw=s1w_event_18_], robust
-reg ydep31 event_18_  [aw=s1w_event_18_], robust
-reg ydep32 event_18_  [aw=s1w_event_18_], robust
-reg ydep33 event_18_  [aw=s1w_event_18_], robust
-reg ydep34 event_18_  [aw=s1w_event_18_], robust
+reg ydep30 `var'  [aw=s1w_`var'], robust
+reg ydep31 `var' [aw=s1w_`var'], robust
+reg ydep32 `var'  [aw=s1w_event_18_], robust
+reg ydep33 `var'  [aw=s1w_event_18_], robust
+reg ydep34 `var'  [aw=s1w_event_18_], robust
+
+//////// Option 2, get averages of weights //////////
+
+local var event_18_   
+use "$auxdata/`var'.dta", clear
+
+
+
+use DDCG_with_events, clear
+foreach var of varlist  event_* {
+cap: merge m:1 countrynum using "$auxdata/s1_`var'.dta"
+cap: drop _merge
+}
+
+egen s1w= rowmean(s1w_*)
+
+foreach var of varlist  event_* {
+cap: merge m:1 countrynum using "$auxdata/s2_`var'.dta"
+cap: drop _merge
+}
+
+
+
+use DDCG_with_events, clear
+local var event_18_
+merge m:1 countrynum using "$auxdata/s1_`var'.dta"
+drop _merge
+merge m:1 countrynum using "$auxdata/s2_`var'.dta"
+drop _merge
+
+local var event_19_
+merge m:1 countrynum using "$auxdata/s1_`var'.dta"
+drop _merge
+merge m:1 countrynum using "$auxdata/s2_`var'.dta"
+drop _merge
+
+local var event_20_
+merge m:1 countrynum using "$auxdata/s1_`var'.dta"
+drop _merge
+merge m:1 countrynum using "$auxdata/s2_`var'.dta"
+drop _merge
+
+local var event_20_
+use "$auxdata/s2_`var'", replace
+
+
+
+
+
+******************
 
 
 ********************
