@@ -1,6 +1,6 @@
 //  		 ☭ 	797B Jesús Lara	☭	 ///
 /// 	Critical Replication and extension of   ///
-///DDCG by Acemoglu, Naidu, Restrepo & Robinson (2018)///
+///DDCG by Acemoglu, Naidu, Restrepo & Robinson (2018) ///
 
 clear all
 
@@ -49,6 +49,7 @@ esttab T2_1 T2_2 T2_3 using "$tables/Table2.tex", keep(dem  L.y  L2.y  L3.y  L4.
 
 esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-run effect of democracy" persistence "Persistence") fragment nonum nonotes  b(3) se ty append nostar nomtitles nolines wrap gaps
 */
+
 ///////////////////////////////
 // Replication of table 5/////
 //////////////////////////////
@@ -60,39 +61,40 @@ esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-ru
 
 // Generate Treatment democracy variable td
 
-
-
-/*
+use DDCGdata_final, clear
 gen tdemoc=.  
 replace tdemoc=1 if dem==1 & l.dem==0 // captures the exact moment when a country transitions to democracy
-replace tdemoc=0 if dem==0 & l.dem==0 
-// 1) 4 lags in GDP. These will be covariates in our regression
+replace tdemoc=0 if dem==0 & l.dem==0  // countries that have never been a democracy
+
+// 4 lags in GDP. These will be covariates in our regression
 forvalues i=1/4{
 gen lag`i'y=l`i'.y
 }
+keep if lag1y!=. & lag2y!=. & lag3y!=. & lag4y!=.
 
+// 15 lags
 forvalues i=0/15{
 local k =15-`i'
 gen ydep`i'=L`k'.y-L.y
 }
 
-
+// 30 leads
 forvalues i=16/45{
 local k=`i'-15
 gen ydep`i'=F`k'.y-L.y
 }
-
-
 order country_name tdemoc year y ydep*
 keep if tdemoc!=.
+// tdemoc is missing value if country is democracy and was democracy the period before
+// We will have only observations of: nondemocracy and exact transition (including reversals)
 
-// Question: by doing this we are removing all observations of countries that democratized after the democratization... how are 
+
 set seed 12345                       
 
 //// A. Adjustment regression 
 
 xtset, clear
-bootstrap _b, reps(2) cluster(wbcode2): tefpas_ra 
+bootstrap _b, reps(10) cluster(wbcode2): tefpas_ra 
 parmest, format(estimate min95 max95) saving("$auxdata/ra", replace)
 eststo main_ra
 // Get 5 year averages
@@ -128,7 +130,7 @@ esttab ra* using "$tables/T5_ra.tex", replace varlabels (ra "Avg. effect on log 
 /// B. Inverse propensity score reweighting
 
 xtset, clear
-bootstrap _b, reps(2) cluster(wbcode2): tefpas_ipw 
+bootstrap _b, reps(10) cluster(wbcode2): tefpas_ipw 
 parmest, format(estimate min95 max95) saving("$auxdata/psr", replace)
 eststo main_psr 
 // Get 5 year averages
@@ -165,7 +167,7 @@ esttab psr* using "$tables/T5_psr.tex", replace varlabels (psr "Avg. effect on l
 // C. Doubly robust estimator
 
 xtset, clear
-bootstrap _b, reps(2) cluster(wbcode2): tefpas_ipwra 
+bootstrap _b, reps(10) cluster(wbcode2): tefpas_ipwra 
 parmest, format(estimate min95 max95) saving("$auxdata/dr", replace)
 eststo main_dr 
 // Get 5 year averages
@@ -351,7 +353,7 @@ quietly replace tunit=1 if countrynum==`i'
 
 //Event i
 gen event_`i'_=.
-// Prepare dependent variables for regressions. I will consider 10, 15 and 19 years after democratization 
+// Prepare dependent variables for regressions. 
 
 forvalues j=`mincountry'/`maxcountry'{
 if `j'==`i'{
@@ -444,7 +446,7 @@ local mincountry=r(min)
 local maxcountry=r(max)
 mat T=.
 forvalues k=`mincountry'/`maxcountry'{
-su tunit if countrynum==`k'
+quiet su tunit if countrynum==`k'
 if r(mean)==1{
 if T[1,1]==. {
 mat T=(`k')
@@ -459,42 +461,50 @@ else {
 
 use DDCG_with_events, clear 
 
-*** NO, error: corregir: estima con ydep25-29 como variable dependiente (15-19 años post), y después nlcom de esos 4 coeficientes para obtener el promedio 15-19. 
+*** 
 
+// This one works. Exactly 35 events
 foreach var of varlist event_*{
 use "$auxdata/`var'.dta",replace
-foreach s of numlist 25 30 34 {
+
+forvalues s=30/33{
 quiet su ydep`s' if `var'==1
 di "`var'" `s' 
 di r(mean)
-if r(mean)!=.{ 
-quiet reg ydep`s' `var' lag*, cluster(countrynum)
-if r(table)[5,1]==. | r(table)[6,1]==.{
-di "`var' `s' colinearity "
-}
-else{
+
+// Define first for the first event=18
 if "`var'"=="event_18_"{
-mat ests`s'=(_b[`var'], r(table)[5,1], r(table)[6,1])
-}
-else{
-mat ests`s'=ests`s' \ (_b[`var'], r(table)[5,1], r(table)[6,1])
-}
-}
+if r(mean)!=.{
+quiet reg ydep`s' `var' lag*, cluster(countrynum)
+mat b`s'=(_b[`var'])
 }
 else {
-di "ydep`s' is a missing value in `var'"
+mat b`s'=(.)
+}
+}
+else{
+if r(mean)!=.{
+quiet reg ydep`s' `var' lag*, cluster(countrynum)
+mat b`s'=b`s' \ (_b[`var'])
+}
+else{
+mat b`s'=b`s' \ (.)
+}
 }
 }
 }
 
-foreach s of numlist 25 30 34 {
+
+forvalues s=30/34{
 local k=`s'-15
-svmat ests`s'
-
-hist ests`s'1, title (Effect of Democratization on Growth: Event Analysis) subtitle(`k' years after democratization) freq w(8) scheme(s1color) xtitle(Estimate) xlabel(#20) 
-graph export "$figures/4a_`s'.png",replace
+svmat b`s'
+replace b`s'=. if b`s'==0 // If the coefficient is exactly=0 it is because of problems of colinearity, idk why that happens ¯\_(ツ)_/¯
 }
 
+egen average_b= rowmean(b*)
+
+hist average_b, title (Effect of Democratization on Growth: Event Analysis) subtitle(Average 15-19 years after democratization) freq w(8) scheme(s1color) xtitle(Estimate) xlabel(#20) 
+graph export "$figures/4a.png",replace
 
 // b= r(table)[1,1]
 // se= r(table) [1,2]
@@ -514,13 +524,14 @@ graph export "$figures/4a_`s'.png",replace
 use DDCG_with_events, clear 
 
 foreach var of varlist event_*{
+use DDCG_with_events, clear 
 if "`var'"=="event_18_"{
 use "$auxdata/`var'.dta",replace
 }
 else{
 append using "$auxdata/`var'.dta"
 }
-}
+
 order year country_name event*
 
 foreach var of varlist event_*{
@@ -528,16 +539,101 @@ replace `var'=0 if `var'==.
 
 }
 reg ydep20 i.dem i.event_* lag*
+}
 ********************
 ****** PART 5*******
 ********************
-
-
-
-
-
+use DDCG_with_events, clear 
 xtset countrynum year
-synth_runner y y(1960) y(1961) y(1962) y(1963) y(1964) y(1965) y(1966) y(1967) y(1968) y(1969) y(1970), d(tunit)
+
+foreach var of varlist  event_*{
+
+preserve
+su year if `var'==1
+local t0 = r(mean)
+sca t0= r(mean)
+sca t10=t0-10
+su countrynum if `var'== 1
+sca tcountry=r(mean)
+replace `var'=1 if `var'==. & countrynum==tcountry
+drop if `var'==.
+drop if year<t10
+
+egen countrynum2=group(country_name)
+order countrynum2 
+quiet su countrynum2 
+local mincountry=r(min)
+local maxcountry=r(max)
+
+forvalues i=`mincountry'/`maxcountry'{
+quiet su year if countrynum2==`i'
+local N=r(N)
+local N5= `N'-5
+quiet su y if countrynum2==`i'
+di r(N)
+di `N5'
+if r(N)<`N' {
+drop if countrynum2==`i' 
+}
+else{
+di "jeje"
+}
+}
+
+order y
+
+forvalues k=1/10{
+local t`k'=t0-`k'
+}
+
+local t0=t0
+local tcountry=tcountry
+//Controls must have y data for at least 
+
+cap: synth y  y(`t1') y(`t2') y(`t3') y(`t4'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s1_`var'", replace) 
+
+
+cap: use "$auxdata/s1_`var'.dta", clear
+cap: rename _Co_Number countrynum   
+cap: rename _W_Weight s1w_`var' 
+cap: keep countrynum s1w_`var'
+cap: drop if countrynum==. & s1w_`var'==.
+cap: sa  "$auxdata/s1_`var'.dta", replace
+
+cap: synth y y y(`t1') y(`t2') y(`t3') y(`t4') y(`t5') y(`t6') y(`t7') y(`t8') y(`t9') y(`t10'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s2_`var'", replace) 
+
+cap: use "$auxdata/s2_`var'", clear
+cap: rename _Co_Number countrynum   
+cap: rename _W_Weight s2w_`var'  
+cap: keep countrynum s2w_`var'
+cap: drop if countrynum==. & s2w_`var'==.
+cap: sa  "$auxdata/s2_`var'.dta", replace 
+restore
+}
+
+// WTF do we do with the weights???
+// Pooled regression??? 
+// do the same than before??? WTF!!!
+
+*I will do the same alv
+
+use "$auxdata/event_18_.dta", clear
+
+merge 1:1 countrynum using "$auxdata\s1_event_18_.dta"
+drop _merge
+merge 1:1 countrynum using "$auxdata\s2_event_18_.dta"
+drop _merge
+
+replace s1w_event_18_=0 if s1w_event_18_==.
+replace s2w_event_18_=0 if s2w_event_18_==.
+replace s1w_event_18_=1 if event_18_==1
+replace s2w_event_18_=1 if event_18_==1
+
+reg ydep30 event_18_  [aw=s1w_event_18_], robust
+reg ydep31 event_18_  [aw=s1w_event_18_], robust
+reg ydep32 event_18_  [aw=s1w_event_18_], robust
+reg ydep33 event_18_  [aw=s1w_event_18_], robust
+reg ydep34 event_18_  [aw=s1w_event_18_], robust
 
 
 ********************
