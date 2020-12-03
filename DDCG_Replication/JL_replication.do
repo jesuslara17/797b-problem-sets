@@ -347,8 +347,8 @@ di "Only one transition to democracy"
 local t0=r(mean)
 quiet su dem if year >=`t0' & countrynum==`i'
 
-if r(min)==r(max){
-di " `i' is treated unit"
+if r(min)==r(max) & `t0'<1992{
+di " `i' is treated unit, democratized in `t0'"
 quietly replace tunit=1 if countrynum==`i'
 
 //Event i
@@ -396,7 +396,6 @@ forvalues i=1/4{
 gen lag`i'y=l`i'.y
 }
 
-// Gen all leads, we may only use a couple 
 forvalues i=16/45{
 local k=`i'-15
 gen ydep`i'=F`k'.y-L.y
@@ -406,12 +405,11 @@ gen ydep`i'=F`k'.y-L.y
 foreach var of varlist event_*{
 preserve 
 drop if `var'==.
-keep `var' ydep* country_name countrynum dem tdemoc lag* year y
+keep `var' ydep* country_name countrynum dem tdemoc lag* year y yy*
 order year countrynum country_name `var' tdemoc dem y ydep* lag* 
 quiet su year if `var'==1
 local t0=r(mean)
 keep if year==`t0'
-
 save "$auxdata/`var'.dta", replace
 restore
 }
@@ -464,7 +462,7 @@ use DDCG_with_events, clear
 
 *** 
 
-// This one works. Exactly 35 events
+// This one works. 
 foreach var of varlist event_*{
 use "$auxdata/`var'.dta",replace
 
@@ -496,7 +494,8 @@ mat b`s'=b`s' \ (.)
 }
 
 
-forvalues s=30/34{
+
+forvalues s=30/33{
 local k=`s'-15
 svmat b`s'
 replace b`s'=. if b`s'==0 // If the coefficient is exactly=0 it is because of problems of colinearity, idk why that happens ¯\_(ツ)_/¯
@@ -507,16 +506,140 @@ egen average_b= rowmean(b*)
 hist average_b, title (Effect of Democratization on Growth: Event Analysis) subtitle(Average 15-19 years after democratization) freq w(8) scheme(s1color) xtitle(Estimate) xlabel(#20) 
 graph export "$figures/4a.png",replace
 
-// b= r(table)[1,1]
-// se= r(table) [1,2]
-// bmin95= r(table)[1,4]
-// bmax95== r(table)[1,5]  
 
 
 ****** 4 (b) ********
 *********************
 
+/*The basic  steps are described in Ferman and Pinto’s paper (p. 457-458), which is in our syllabus Yes, you’re right it’s Figure D1, I’ll make that correction. You can use the population of the country as the M, or can simply set M=1 for all countries for simplicity (in which case the estimates are basically like Conley and Taber and don’t correct for heteroscedasticty). 
+
+If you can’t implement the FP SEs, at the minimum, show the distribution of estimates from the events even if the standard errors aren’t “correct”  [make a note of that in your writeup.]*/
+use DDCG_with_events, clear 
+
+foreach var of varlist event_*{
+use "$auxdata/`var'.dta",replace
+egen ydepmean= rowmean(ydep30 ydep31 ydep32 ydep33 ydep34)
+rename `var' treatment
+quiet reg ydepmean treatment lag*, cluster(countrynum)
+
+if "`var'"=="event_18_"{
+if r(table)[5,1]!=.{
+mat ests=(_b[treatment],r(table)[5,1],r(table)[6,1])
+}
+else{
+di "problems of collinearity"
+}
+}
+else{
+quiet reg ydepmean treatment lag*, cluster(countrynum)
+if r(table)[5,1]!=.{
+mat ests= ests \ (_b[treatment],r(table)[5,1],r(table)[6,1])
+}
+else{
+di "problems of collinearity"
+}
+}
+}
+
+
+svmat ests 
+gen evening=.
+forvalues i=1/22{
+replace evening=`i' in `i'
+}
+
+twoway ///
+rbar ests2 ests3 evening , xline(0) scheme(s1color) horizontal color(gs12) ||  ///
+scatter evening  ests1 if ests2>0 | ests3<0, mcolor(blue) || ///
+scatter evening  ests1 if ests2<0 & ests3>0, mcolor(red) ///
+ytitle(Event) xtitle(Estimate 15-19 years) legend(label(1 "lowe/upper 95%"  ) label(2 "Significant") label(3 "Non-significant"))
+graph export "$figures/4b.png"
+
+
 // Ferman & Pinto 
+
+**** Do Conley Taber ¯\_(ツ)_/¯
+
+****************
+****** Conley Taber
+
+// Prepare dataset, same than as the beginning of par 4 but keeping all years for treated countries
+
+use ${home}/DDCGdata_final, clear
+egen countrynum= group(country_name)
+gen tdemoc=.
+replace tdemoc=1 if dem==1 & l.dem==0
+order tdemoc countrynum year
+gen tunit=.
+quiet su countrynum 
+local mincountry=r(min)
+local maxcountry=r(max)
+forvalues i=`mincountry'/`maxcountry'{
+quiet  su year if countrynum==`i' & tdemoc==1
+if r(N)==1{
+di `i'
+di "Only one transition to democracy"
+local t0=r(mean)
+quiet su dem if year >=`t0' & countrynum==`i'
+if r(min)==r(max) & `t0'<1992{
+di " `i' is treated unit"
+quietly replace tunit=1 if countrynum==`i'
+gen event_`i'_=.
+forvalues j=`mincountry'/`maxcountry'{
+if `j'==`i'{
+quietly replace event_`i'_=0 if year<`t0' & countrynum==`j'
+quietly replace event_`i'_=1 if year>=`t0' & countrynum==`j' // Change 1
+}
+
+else{
+local t20= `t0'+20
+quietly su dem if countrynum==`j' & year <=`t20'
+if r(max)==0{
+
+// di "`j' is a clean control of `i'"
+quietly replace event_`i'_=0 if countrynum==`j'
+}
+else{
+quietly replace event_`i'_=. if countrynum==`j'
+}
+}
+}
+}
+else{
+di "Experienced a reversal"
+//quietly replace tunit=. if countrynum==`i'
+}
+}
+else {
+di "`i' had more than one transition to democracy"
+//quietly replace tunit=. if countrynum==`i'
+}
+}
+quietly replace tunit=0 if tunit==.
+
+
+// Generate variables and prepare events datasets
+
+forvalues i=1/4{
+gen lag`i'y=l`i'.y
+}
+
+forvalues i=16/45{
+local k=`i'-15
+gen ydep`i'=F`k'.y-L.y
+}
+
+
+foreach var of varlist event_*{
+preserve 
+drop if `var'==.
+keep `var' ydep* country_name countrynum dem tdemoc lag* year y yy*
+order year countrynum country_name `var' tdemoc dem y ydep* lag* 
+quiet su year if `var'==1
+local t0=r(mean)
+save "$auxdata/conley_`var'.dta", replace
+restore
+}
 
 ****** 4 (c) ********
 *********************
@@ -560,11 +683,11 @@ order event_*
 
 capture program drop  fe_event 
 program fe_event, eclass 
-forvalues s=30/33{
-local k= `s'-29
+forvalues s=31/35{
+local k= `s'-30
 quiet reg ydep`s' tdemoc lag*  event_*, cluster (countrynum)
 est sto r`k'
-if `s'==30{
+if `s'==31{
 mat b=(_b[tdemoc])
 local v`k'=e(V)[1,1]
 } 
@@ -573,12 +696,13 @@ mat b=(b, _b[tdemoc])
 local v`k'=e(V)[1,1]
 }
 }
-matrix V=J(4,4,1)
+matrix V=J(5,5,1)
 matrix V[1,1]=`v1'
 matrix V[2,2]=`v2'
 matrix V[3,3]=`v3'
 matrix V[4,4]=`v4'
-matrix rownames V= "c1" "c2" "c3" "c4"
+matrix V[5,5]=`v5'
+matrix rownames V= "c1" "c2" "c3" "c4" "c5"
 mat list V
 mat list b
 */
@@ -588,29 +712,22 @@ end
 
 
 fe_event
-nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4])/4), post
+nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4]+_b[c5])/4), post
 eststo avc   
 
 //bootstrap standard errors
 bootstrap _b: fe_event
-nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4])/4), post
+nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4] +_b[c5])/4), post
 eststo avb
 
-esttab r* avc avb using "$tables/4c.tex", replace keep(tdemoc)  se nostar varlabels (tdemoc "Avg. effect on log GDP") b(3)   wrap nonotes ty mlabels("15 years" "16 years" "17 years" "18 years" "Av." "Av.(Bootstrap)")
-
-esttab r* av* using "$tables/4c.tex", replace keep(tdemoc) fragment se nostar varlabels (tdemoc "Avg. effect on log GDP") b(3) nomtitles nolines wrap ty
-
-varlabels (dr "Avg. effect on log GDP") fragment nostar nonum nonotes se nomtitles nolines wrap ty  noobs b(3)
+esttab r* avc avb using "$tables/4c.tex", replace keep(tdemoc)  se nostar varlabels (tdemoc "Avg. effect on log GDP") b(3)   wrap nonotes ty mlabels("15 years" "16 years" "17 years" "18 years" "19 years" "Av." "Av.(Bootstrap)")
 
 
-order year country_name event*
 
-foreach var of varlist event_*{
-replace `var'=1 if `var'==.
 
-}
-reg ydep20 i.dem i.event_* lag*
-}
+
+
+
 ********************
 ****** PART 5*******
 ********************
@@ -659,26 +776,34 @@ local t`k'=t0-`k'
 
 local t0=t0
 local tcountry=tcountry
-//Controls must have y data for at least 
+//Controls must have y data for at least 10 years before treatment
 
-cap: synth y  y(`t1') y(`t2') y(`t3') y(`t4'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s1_`var'", replace) 
+cap: quiet synth y  y(`t1') y(`t2') y(`t3') y(`t4'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s1_`var'", replace) 
+if _rc==0{
 
+use "$auxdata/s1_`var'.dta", clear
 
-cap: use "$auxdata/s1_`var'.dta", clear
-cap: rename _Co_Number countrynum   
-cap: rename _W_Weight s1w_`var' 
-cap: keep countrynum s1w_`var'
-cap: drop if countrynum==. & s1w_`var'==.
-cap: sa  "$auxdata/s1_`var'.dta", replace
-
-cap: synth y y y(`t1') y(`t2') y(`t3') y(`t4') y(`t5') y(`t6') y(`t7') y(`t8') y(`t9') y(`t10'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s2_`var'", replace) 
-
-cap: use "$auxdata/s2_`var'", clear
-cap: rename _Co_Number countrynum   
-cap: rename _W_Weight s2w_`var'  
-cap: keep countrynum s2w_`var'
-cap: drop if countrynum==. & s2w_`var'==.
-cap: sa  "$auxdata/s2_`var'.dta", replace 
+rename _Co_Number countrynum   
+rename _W_Weight s1w_`var' 
+keep countrynum s1w_`var'
+drop if countrynum==. & s1w_`var'==.
+sa  "$auxdata/s1_`var'.dta", replace
+}
+else{
+di "s1 no corrió `var'"
+}
+cap: quiet  synth y y y(`t1') y(`t2') y(`t3') y(`t4') y(`t5') y(`t6') y(`t7') y(`t8') y(`t9') y(`t10'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s2_`var'", replace) 
+if _rc==0{
+use "$auxdata/s2_`var'", clear
+rename _Co_Number countrynum   
+rename _W_Weight s2w_`var'  
+keep countrynum s2w_`var'
+drop if countrynum==. & s2w_`var'==.
+sa  "$auxdata/s2_`var'.dta", replace 
+}
+else{
+di "s1 no corrió `var'"
+}
 restore
 }
 
