@@ -9,17 +9,9 @@ global tables "$home/tables"
 global figures "$home/figures"
 global auxdata "$home/auxdata"
 global numbers "$home/numbers"
-
 cd $home
-
 use DDCGdata_final, clear
-
-
 xtset wbcode2 year
-
-/// Dem is the measure of democracy
-
-
 ********************
 ****** PART 1*******
 ********************
@@ -54,25 +46,19 @@ esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-ru
 // Replication of table 5/////
 //////////////////////////////
 
-
-// 2) Now generate our dependent variables: \Delta y^s_ct= y^s_ct -y_t-1
-// t: period of democratization, s: years after democratization 
-// We consider: 15 years before democratization, 30 years after democratizationuse DDCGdata_final, clear
-
 // Generate Treatment democracy variable td
 
 use DDCGdata_final, clear
 gen tdemoc=.  
 replace tdemoc=1 if dem==1 & l.dem==0 // captures the exact moment when a country transitions to democracy
 replace tdemoc=0 if dem==0 & l.dem==0  // countries that have never been a democracy
-
 // 4 lags in GDP. These will be covariates in our regression
 forvalues i=1/4{
 gen lag`i'y=l`i'.y
 }
 keep if lag1y!=. & lag2y!=. & lag3y!=. & lag4y!=.
 
-// 15 lags
+// 15 lags (15 years previous dem)
 forvalues i=0/15{
 local k =15-`i'
 gen ydep`i'=L`k'.y-L.y
@@ -83,6 +69,7 @@ forvalues i=16/45{
 local k=`i'-15
 gen ydep`i'=F`k'.y-L.y
 }
+
 order country_name tdemoc year y ydep*
 keep if tdemoc!=.
 // tdemoc is missing value if country is democracy and was democracy the period before
@@ -91,10 +78,160 @@ keep if tdemoc!=.
 
 set seed 12345                       
 
-//// A. Adjustment regression 
+////////////////////////
+// CREATE PROGRAMS/////
+///////////////////////
 
+/////////////////////////////
+/// A. REGRESSION ADJUSTMENT PROGRAM
+capture program ra, eclass
+quietly: tab year if ydep0!=. & tdemoc!=., gen(dumyears)
+/* year -15 */
+cap: teffects ra (ydep0 lag1y lag2y lag3y lag4y dumyears*, noconstant) (tdemoc), atet iterate(7)
+if _rc==0{
+matrix b=_b[ATET: r1vs0.tdemoc]
+}
+else{
+matrix b=(.)
+}
+quietly: drop dumyears*
+/*years -14 to -5 */
+forvalues s=1(1)10{
+quietly: tab year if ydep`s'!=. & tdemoc!=., gen(dumyears)
+cap: teffects ra (ydep`s' lag1y lag2y lag3y lag4y dumyears*, noconstant) (tdemoc), atet iterate(7)
+if _rc==0{
+matrix b=(b, _b[ATET: r1vs0.tdemoc])
+}
+else{
+matrix b=(b, .)
+}
+quietly: drop dumyears*
+}
+/*Years: -4, -3, -2, -1 */
+matrix b=(b, 0, 0, 0, 0)
+/*  years 0 to 30 */
+forvalues s=15(1)45{
+quietly: tab year if ydep`s'!=. & tdemoc!=., gen(dumyears)
+cap: teffects ra (ydep`s' lag1y lag2y lag3y lag4y dumyears*, noconstant) (tdemoc), atet iterate(7)
+if _rc==0{
+matrix b=(b, _b[ATET: r1vs0.tdemoc])
+}
+else{
+matrix b=(b, .)
+}
+quietly: drop dumyears*
+}
+ereturn post b
+end
+////////////
+////////////
+
+// B. PSR PROGRAM/////
+//////////////////////
+capture program psr, eclass
+/* year -15 */
+quietly: gen temp=tdemoc if ydep0!=. &tdemoc!=.
+quietly: bysort year: egen mtemp=max(temp)
+quietly: tab year if mtemp==1, gen(dumyears)
+cap: teffects ipw (ydep0) (tdemoc lag1y lag2y lag3y lag4y dumyears*, noconstant probit), atet iterate(7)
+if _rc==0{
+matrix b=_b[ATET: r1vs0.tdemoc]
+}
+else{
+matrix b=(.)
+}
+quietly: drop dumyears* temp mtemp
+/* year -14 to -2*/
+forvalues s=1(1)13{
+quietly: gen temp=tdemoc if ydep`s'!=. &tdemoc!=.
+quietly: bysort year: egen mtemp=max(temp)
+quietly: tab year if mtemp==1, gen(dumyears)
+cap: teffects ipw (ydep`s') (tdemoc lag1y lag2y lag3y lag4y dumyears*, noconstant probit), atet iterate(7)
+if _rc==0{
+matrix b=(b, _b[ATET: r1vs0.tdemoc])
+}
+else{
+matrix b=(b, .)
+}
+quietly: drop dumyears* temp mtemp
+}
+/* year -1  */
+matrix b=(b, 0)
+/*  year 0 to 30 */
+forvalues s=15(1)45{
+quietly: gen temp=tdemoc if ydep`s'!=. &tdemoc!=.
+quietly: bysort year: egen mtemp=max(temp)
+quietly: tab year if mtemp==1, gen(dumyears)
+cap: teffects ipw (ydep`s') (tdemoc lag1y lag2y lag3y lag4y dumyears*, noconstant probit), atet iterate(7)
+if _rc==0{
+matrix b=(b, _b[ATET: r1vs0.tdemoc])
+}
+else{
+matrix b=(b, .)
+}
+quietly: drop dumyears* temp mtemp
+}
+ereturn post b
+end
+
+//////////////////////////
+//C. DOUBLY ROBUST PROGRAM
+//////////////////////////
+
+capture program drop dr
+program dr, eclass
+/* year -15 */
+quietly: gen temp=tdemoc if ydep0!=. &tdemoc!=.
+quietly: bysort year: egen mtemp=max(temp)
+quietly: tab year if mtemp==1, gen(dumyears)
+cap: teffects ipwra (ydep0 lag1y lag2y lag3y lag4y dumyears*, noconstant) (tdemoc lag1y lag2y lag3y lag4y dumyears*, probit), atet iterate(7)
+if _rc==0{
+matrix b=_b[ATET: r1vs0.tdemoc]
+}
+else{
+matrix b=(.)
+}
+quietly: drop dumyears* temp mtemp
+/* years -14 to -5 */
+forvalues s=1(1)10{
+quietly: gen temp=tdemoc if ydep`s'!=. &tdemoc!=.
+quietly: bysort year: egen mtemp=max(temp)
+quietly: tab year if mtemp==1, gen(dumyears)
+cap: teffects ipwra (ydep`s' lag1y lag2y lag3y lag4y dumyears*, noconstant) (tdemoc lag1y lag2y lag3y lag4y dumyears*, probit), atet iterate(7)
+if _rc==0{
+matrix b=(b, _b[ATET: r1vs0.tdemoc])
+}
+else{
+matrix b=(b, .)
+}
+quietly: drop dumyears* temp mtemp
+}
+/*  years -4, -3, -2, -1  */
+matrix b=(b, 0, 0, 0, 0)
+/* year 0 to 30 */
+forvalues s=15(1)45{
+quietly: gen temp=tdemoc if ydep`s'!=. &tdemoc!=.
+quietly: bysort year: egen mtemp=max(temp)
+quietly: tab year if mtemp==1, gen(dumyears)
+cap: teffects ipwra (ydep`s' lag1y lag2y lag3y lag4y dumyears*, noconstant) (tdemoc lag1y lag2y lag3y lag4y dumyears*, probit), atet iterate(7)
+if _rc==0{
+matrix b=(b, _b[ATET: r1vs0.tdemoc])
+}
+else{
+matrix b=(b, .)
+}
+quietly: drop dumyears* temp mtemp
+}
+ereturn post b
+end
+
+//////////////////
+////ESTIMATION ///
+//////////////////
+
+//// A. Adjustment regression 
 xtset, clear
-bootstrap _b, reps(10) cluster(wbcode2): tefpas_ra 
+bootstrap _b, reps(10) cluster(wbcode2): ra 
 parmest, format(estimate min95 max95) saving("$auxdata/ra", replace)
 eststo main_ra
 // Get 5 year averages
@@ -130,7 +267,7 @@ esttab ra* using "$tables/T5_ra.tex", replace varlabels (ra "Avg. effect on log 
 /// B. Inverse propensity score reweighting
 
 xtset, clear
-bootstrap _b, reps(10) cluster(wbcode2): tefpas_ipw 
+bootstrap _b, reps(10) cluster(wbcode2): psr
 parmest, format(estimate min95 max95) saving("$auxdata/psr", replace)
 eststo main_psr 
 // Get 5 year averages
@@ -167,7 +304,7 @@ esttab psr* using "$tables/T5_psr.tex", replace varlabels (psr "Avg. effect on l
 // C. Doubly robust estimator
 
 xtset, clear
-bootstrap _b, reps(10) cluster(wbcode2): tefpas_ipwra 
+bootstrap _b, reps(10) cluster(wbcode2): dr
 parmest, format(estimate min95 max95) saving("$auxdata/dr", replace)
 eststo main_dr 
 // Get 5 year averages
@@ -209,7 +346,6 @@ esttab dr* using "$tables/T5_dr.tex", replace varlabels (dr "Avg. effect on log 
 /// Now it is correct
 
 use DDCGdata_final, clear
-
 gen tdemoc=.  
 replace tdemoc=1 if dem==1 & l.dem==0 // captures the exact moment when a country transitions to democracy
 replace tdemoc=0 if dem==0 & l.dem==0 
@@ -223,13 +359,10 @@ local k =15-`i'
 gen ydep`i'=L`k'.y-L.y
 }
 
-
 forvalues i=16/45{
 local k=`i'-15
 gen ydep`i'=F`k'.y-L.y
 }
-
-
 order country_name tdemoc year y ydep*
 keep if tdemoc!=.
 
@@ -245,7 +378,7 @@ mat colnames ests="b" "ll" "ul"
 }
 }
 
-drop ests*
+
 svmat ests
 
 cap drop yad
@@ -258,8 +391,6 @@ replace yad=`k' in `j'
 
 line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off)
 graph export "$figures/part2a.png", as(png) replace
-
-
 
 /// No lags
 forvalues s=0/45{
@@ -286,13 +417,6 @@ replace yad=`k' in `j'
 line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off) ylabel(#6) 
 graph export "$figures/part2b.png", as(png) replace
 
-
-
-/*
-coefplot (ldid*, lcolor(black) mcolor(black)), vertical keep(tdemoc)  aseq swapnames scheme(s1color)  title ("DID estimates") ciopts(recast(rline) lcolor(gray) lpattern(dash)) recast(line) yline(0, lcolor(black) lpattern(dash) ) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) xlabel(#10)  
-graph export "$figures/part2b.png", as(png) replace
-*/ 
- 
 
 ********************
 ****** PART 3*******
@@ -321,9 +445,6 @@ graph export  "$figures/part3`type'.png", replace
 ********************
 ****** PART 4*******
 ********************
-
-
-
 use ${home}/DDCGdata_final, clear
 
 // The code below identifies treated units (countries that transitioned to democracy with no reversals) and the clean controls associated to each treated unit (countries that did not have a transition before t0 and at least 20 year after)
@@ -339,6 +460,7 @@ quiet su countrynum
 local mincountry=r(min)
 local maxcountry=r(max)
 
+
 forvalues i=`mincountry'/`maxcountry'{
 quiet  su year if countrynum==`i' & tdemoc==1
 if r(N)==1{
@@ -346,7 +468,6 @@ di `i'
 di "Only one transition to democracy"
 local t0=r(mean)
 quiet su dem if year >=`t0' & countrynum==`i'
-
 if r(min)==r(max) & `t0'<1992{
 di " `i' is treated unit, democratized in `t0'"
 quietly replace tunit=1 if countrynum==`i'
@@ -388,19 +509,26 @@ di "`i' had more than one transition to democracy"
 }
 quietly replace tunit=0 if tunit==.
 
-save "DDCG_with_events.dta",replace
+
 
 // Generate variables and prepare events datasets
-
 forvalues i=1/4{
 gen lag`i'y=l`i'.y
 }
 
+// 15 lags (15 years previous dem)
+forvalues i=0/15{
+local k =15-`i'
+gen ydep`i'=L`k'.y-L.y
+}
+// 30 leads
 forvalues i=16/45{
 local k=`i'-15
 gen ydep`i'=F`k'.y-L.y
 }
 
+save "DDCG_with_events.dta", replace
+/// Save datasets
 
 foreach var of varlist event_*{
 preserve 
@@ -413,22 +541,6 @@ keep if year==`t0'
 save "$auxdata/`var'.dta", replace
 restore
 }
-// One wide data set for each event
-
-
-
-/*
-forvalues i=`mincountry'/`maxcountry'{
-quiet su dem if countrynum==`i'
-if r(max)==r(min){
-di "`i' is a clean control: same political regime"
-quietly replace tunit=0 if countrynum==`i'
-}
-else{
-}
-}
-*/
-
 
 ****** 4 (a) *******
 ********************
@@ -436,8 +548,6 @@ else{
 /// Proceed with estimation...
 // Preliminary code
 *List of all treated units, how to get it?
-
-
 //Store countrynum s.t. tunit=1 in a matrix
 
 quiet su countrynum 
@@ -569,7 +679,7 @@ graph export "$figures/4b.png"
 ****** 4 (c) ********
 *********************
 
-// Stack in wide format? 
+// Stack in wide format
 use DDCG_with_events, clear 
 
 
@@ -608,11 +718,12 @@ order event_*
 
 capture program drop  fe_event 
 program fe_event, eclass 
-forvalues s=31/35{
-local k= `s'-30
+forvalues s=30/34{
+local k= `s'-29
 quiet reg ydep`s' tdemoc lag*  event_*, cluster (countrynum)
+di _b[tdemoc]
 est sto r`k'
-if `s'==31{
+if `s'==30 {
 mat b=(_b[tdemoc])
 local v`k'=e(V)[1,1]
 } 
@@ -630,47 +741,92 @@ matrix V[5,5]=`v5'
 matrix rownames V= "c1" "c2" "c3" "c4" "c5"
 mat list V
 mat list b
-*/
+
 ereturn post b V
 *ereturn post V
 end
 
-
-fe_event
-nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4]+_b[c5])/4), post
-eststo avc   
-
 //bootstrap standard errors
 bootstrap _b: fe_event
-nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4] +_b[c5])/4), post
+nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4] +_b[c5])/5), post
 eststo avb
 
-esttab r* avc avb using "$tables/4c.tex", replace keep(tdemoc)  se nostar varlabels (tdemoc "Avg. effect on log GDP") b(3)   wrap nonotes ty mlabels("15 years" "16 years" "17 years" "18 years" "19 years" "Av." "Av.(Bootstrap)")
+// cluster standard errors
+fe_event
+nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4]+_b[c5])/5), post
+eststo avc   
 
-
-
-
-
+esttab r1 r2 r3 r4 r5 avc avb using "$tables/4c.tex", replace keep(tdemoc)  se nostar varlabels (tdemoc "Avg. effect on log GDP") b(3)   wrap nonotes ty mlabels("15 years" "16 years" "17 years" "18 years" "19 years" "Av." "Av.(Bootstrap)")
 
 
 ********************
 ****** PART 5*******
 ********************
+
+///////////// Get synth_events ///////////
+//////////////////////////////////////////
+
+use DDCG_with_events, clear
+
+foreach var of varlist event_*{
+preserve
+di "`var'" 
+quiet su year if `var'==1
+local t0 = r(mean)
+sca t0= r(mean)
+sca t10=t0-10
+quiet su countrynum if `var'== 1
+sca tcountry=r(mean)
+quietly drop if `var'==.
+quietly drop if year<t10
+
+egen countrynum2=group(country_name)
+quiet su countrynum2 
+local mincountry=r(min)
+local maxcountry=r(max)
+forvalues i=`mincountry'/`maxcountry'{
+quiet su year if countrynum2==`i'
+local N=r(N)
+local N5= `N'-5
+quiet su y if countrynum2==`i'
+di r(N)
+di `N5'
+if r(N)<`N' {
+drop if countrynum2==`i' 
+}
+else{
+di "jeje"
+}
+}
+rename `var'  synth_`var'
+
+keep synth_`var' ydep* country_name countrynum dem tdemoc lag* year y yy*
+order year synth_`var' countrynum country_name  tdemoc dem y ydep* lag* 
+keep if year==`t0'
+replace synth_`var'=1 
+replace tdemoc=0 if tdemoc==.
+save "$auxdata/synth_`var'.dta", replace
+restore
+}
+
+
+//// Get weights and merge with events ////
 use DDCG_with_events, clear 
 xtset countrynum year
 
 foreach var of varlist  event_*{
 preserve
-
 su year if `var'==1
 local t0 = r(mean)
 sca t0= r(mean)
 sca t10=t0-10
 quiet su countrynum if `var'== 1
 sca tcountry=r(mean)
+
+
 replace `var'=1 if `var'==. & countrynum==tcountry
-drop if `var'==.
-drop if year<t10
+quietly drop if `var'==.
+quietly drop if year<t10
 
 egen countrynum2=group(country_name)
 order countrynum2 
@@ -693,6 +849,10 @@ di "jeje"
 }
 }
 
+
+
+
+
 order y
 
 forvalues k=1/10{
@@ -709,34 +869,134 @@ if _rc==0{
 use "$auxdata/s1_`var'.dta", clear
 
 rename _Co_Number countrynum   
-rename _W_Weight s1w_`var' 
-keep countrynum s1w_`var'
-drop if countrynum==. & s1w_`var'==.
-sa  "$auxdata/s1_`var'.dta", replace
+rename _W_Weight weight 
+quietly keep countrynum weight
+quietly drop if countrynum==. & weight==.
+merge 1:1 countrynum using "$auxdata/synth_`var'.dta"
+drop _merge 
+save "$auxdata/synth_weight_`var'.dta", replace
 }
 else{
 di "s1 no corrió `var'"
 }
+/*
 cap: quiet  synth y y y(`t1') y(`t2') y(`t3') y(`t4') y(`t5') y(`t6') y(`t7') y(`t8') y(`t9') y(`t10'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s2_`var'", replace) 
 if _rc==0{
 use "$auxdata/s2_`var'", clear
 rename _Co_Number countrynum   
 rename _W_Weight s2w_`var'  
-keep countrynum s2w_`var'
-drop if countrynum==. & s2w_`var'==.
+quietly keep countrynum s2w_`var'
+quietly drop if countrynum==. & s2w_`var'==.
 sa  "$auxdata/s2_`var'.dta", replace 
 }
 else{
-di "s1 no corrió `var'"
+di "s2 no corrió `var'"
 }
+*/
 restore
 }
 
-// WTF do we do with the weights???
-// Pooled regression??? 
-// do the same than before??? WTF!!!
 
-*I will do the same alv
+
+
+//////////// FIRST GET A FIGURE LIKE 4 WITHOUT WEIGHTS USING ALL EVENTS////////
+/// ////////////////////////////////////////////////////////////
+
+/// Data win Wide format with FE
+use DDCG_with_events, clear 
+foreach var of varlist event_*{
+
+if "`var'"=="event_18_"{
+use "$auxdata/fe_`var'.dta", clear
+}
+else{
+append using "$auxdata/fe_`var'.dta"
+}
+}
+
+foreach var of varlist event_*{
+replace `var'=0 if `var'==.
+}
+order event_*
+
+//// Estimation
+
+forvalues s=0/45{
+quiet reg ydep`s' tdemoc i.event_*  lag*, cluster(countrynum)
+if `s'==0{
+mat ests=(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+}
+else{
+mat ests=ests\(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+mat colnames ests="b" "ll" "ul"
+}
+}
+
+svmat ests
+cap drop yad
+gen yad=. 
+forvalues i=0/45{
+local k=`i'-14
+local j=`i'+1
+replace yad=`k' in `j'
+}
+
+line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off)
+graph export "$figures/part5no_weights.png", replace
+
+//////////////////////////////
+//// ESTIMATE USING WEIGHTS///
+//////////////////////////////
+
+use DDCG_with_events, clear 
+foreach var of varlist event_*{
+
+if "`var'"=="event_18_"{
+use "$auxdata/synth_weight_`var'.dta", clear
+}
+else{
+cap: append using "$auxdata/synth_weight_`var'.dta"
+}
+}
+
+foreach var of varlist synth_event_*{
+replace `var'=0 if `var'==.
+}
+
+replace weight=1 if weight==.
+//// Estimation
+
+forvalues s=0/45{
+quiet reg ydep`s' tdemoc lag* i.synth_event_*   [aw=weight], cluster(countrynum)
+if `s'==0{
+mat ests=(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+}
+else{
+mat ests=ests\(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+mat colnames ests="b" "ll" "ul"
+}
+}
+
+svmat ests
+cap drop yad
+gen yad=. 
+forvalues i=0/45{
+local k=`i'-14
+local j=`i'+1
+replace yad=`k' in `j'
+}
+
+line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off)
+graph export "$figures/part5s1_weights.png", replace
+
+
+
+////////////////////////////////
+////////////////////////////////
+////////////////////////////////
+////////////////////////////////
+
+
 
 local var event_20_   
 use "$auxdata/`var'.dta", clear
