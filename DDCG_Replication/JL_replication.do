@@ -596,7 +596,8 @@ egen average_b= rowmean(b*)
 hist average_b, title (Effect of Democratization on Growth: Event Analysis) subtitle(Average 15-19 years after democratization) freq w(8) scheme(s1color) xtitle(Estimate) xlabel(#20) 
 graph export "$figures/4a.png",replace
 
-estpost su average_b
+label var average_b "Average Effect 15-19 years"
+estpost su average_b,d
 eststo summary4a
 esttab summary4a using "$tables/summary4a.tex", ///
      label noobs nonumbers nomtitles ty  booktabs replace        ///
@@ -644,7 +645,7 @@ drop if ests2==. | ests3==.
 label var ests1 "Average Effect 15-19 years"
 
 gen evening=.
-forvalues i=1/22{
+forvalues i=1/35{
 replace evening=`i' in `i'
 }
 
@@ -655,7 +656,7 @@ scatter evening  ests1 if ests2<0 & ests3>0, mcolor(red) ///
 ytitle(Event) xtitle(Estimate 15-19 years) legend(label(1 "Lower/Upper 95%"  ) label(2 "Significant") label(3 "Non-significant"))
 graph export "$figures/4b.png", replace
 
-estpost su ests1
+estpost su ests1, d
 eststo summary4b
 
 	
@@ -762,140 +763,7 @@ eststo avc
 
 esttab r1 r2 r3 r4 r5 avc avb using "$tables/4c.tex", replace keep(tdemoc)  se nostar varlabels (tdemoc "Avg. effect on log GDP") b(3)   wrap nonotes ty mlabels("15 years" "16 years" "17 years" "18 years" "19 years" "Av." "Av.(Bootstrap)")
 
-
-********************
-****** PART 5*******
-********************
-
-///////////// Get synth_events ///////////
-//////////////////////////////////////////
-
-use DDCG_with_events, clear
-
-foreach var of varlist event_*{
-preserve
-di "`var'" 
-quiet su year if `var'==1
-local t0 = r(mean)
-sca t0= r(mean)
-sca t10=t0-10
-quiet su countrynum if `var'== 1
-sca tcountry=r(mean)
-quietly drop if `var'==.
-quietly drop if year<t10
-
-egen countrynum2=group(country_name)
-quiet su countrynum2 
-local mincountry=r(min)
-local maxcountry=r(max)
-forvalues i=`mincountry'/`maxcountry'{
-quiet su year if countrynum2==`i'
-local N=r(N)
-local N5= `N'-5
-quiet su y if countrynum2==`i'
-di r(N)
-di `N5'
-if r(N)<`N' {
-drop if countrynum2==`i' 
-}
-else{
-di "jeje"
-}
-}
-rename `var'  synth_`var'
-
-keep synth_`var' ydep* country_name countrynum dem tdemoc lag* year y yy*
-order year synth_`var' countrynum country_name  tdemoc dem y ydep* lag* 
-keep if year==`t0'
-replace synth_`var'=1 
-replace tdemoc=0 if tdemoc==.
-save "$auxdata/synth_`var'.dta", replace
-restore
-}
-
-
-//// Get weights and merge with events ////
-use DDCG_with_events, clear 
-xtset countrynum year
-
-foreach var of varlist  event_*{
-preserve
-su year if `var'==1
-local t0 = r(mean)
-sca t0= r(mean)
-sca t10=t0-10
-quiet su countrynum if `var'== 1
-sca tcountry=r(mean)
-
-
-replace `var'=1 if `var'==. & countrynum==tcountry
-quietly drop if `var'==.
-quietly drop if year<t10
-
-egen countrynum2=group(country_name)
-order countrynum2 
-quiet su countrynum2 
-local mincountry=r(min)
-local maxcountry=r(max)
-
-forvalues i=`mincountry'/`maxcountry'{
-quiet su year if countrynum2==`i'
-local N=r(N)
-local N5= `N'-5
-quiet su y if countrynum2==`i'
-di r(N)
-di `N5'
-if r(N)<`N' {
-drop if countrynum2==`i' 
-}
-else{
-di "jeje"
-}
-}
-
-forvalues k=1/10{
-local t`k'=t0-`k'
-}
-
-local t0=t0
-local tcountry=tcountry
-//Controls must have y data for at least 10 years before treatment
-
-cap: quiet synth y  y(`t1') y(`t2') y(`t3') y(`t4'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s1_`var'", replace) 
-if _rc==0{
-
-use "$auxdata/s1_`var'.dta", clear
-
-rename _Co_Number countrynum   
-rename _W_Weight weight 
-quietly keep countrynum weight
-quietly drop if countrynum==. & weight==.
-merge 1:1 countrynum using "$auxdata/synth_`var'.dta"
-drop _merge 
-save "$auxdata/synth_weight_`var'.dta", replace
-}
-else{
-di "s1 no corrió `var'"
-}
-/*
-cap: quiet  synth y y y(`t1') y(`t2') y(`t3') y(`t4') y(`t5') y(`t6') y(`t7') y(`t8') y(`t9') y(`t10'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s2_`var'", replace) 
-if _rc==0{
-use "$auxdata/s2_`var'", clear
-rename _Co_Number countrynum   
-rename _W_Weight s2w_`var'  
-quietly keep countrynum s2w_`var'
-quietly drop if countrynum==. & s2w_`var'==.
-sa  "$auxdata/s2_`var'.dta", replace 
-}
-else{
-di "s2 no corrió `var'"
-}
-*/
-restore
-}
-
-
-//////////// FIRST GET A FIGURE LIKE 4 WITHOUT WEIGHTS USING ALL EVENTS////////
+///  GET A FIGURE LIKE 4 WITHOUT WEIGHTS USING ALL EVENTS////////
 /// ////////////////////////////////////////////////////////////
 
 /// Data win Wide format with FE
@@ -940,9 +808,147 @@ replace yad=`k' in `j'
 line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off)
 graph export "$figures/part5no_weights.png", replace
 
-//////////////////////////////
-//// ESTIMATE USING WEIGHTS///
-//////////////////////////////
+
+********************
+****** PART 5*******
+********************
+
+///////////// Get synth_events ///////////
+//////////////////////////////////////////
+
+use DDCG_with_events, clear
+
+foreach var of varlist event_*{
+preserve
+di "`var'" 
+quiet su year if `var'==1
+local t0 = r(mean)
+sca t0= r(mean)
+sca t10=t0-10
+sca t15=t0-15
+quiet su countrynum if `var'== 1
+sca tcountry=r(mean)
+quietly drop if `var'==.
+quietly drop if year<t10 // Critical 1
+
+egen countrynum2=group(country_name)
+quiet su countrynum2 
+local mincountry=r(min)
+local maxcountry=r(max)
+forvalues i=`mincountry'/`maxcountry'{
+quiet su year if countrynum2==`i'
+local N=r(N)
+local N5= `N'-10 // Critical 2
+quiet su y if countrynum2==`i'
+di r(N)
+di `N5'
+if r(N)<`N' {
+drop if countrynum2==`i' 
+}
+else{
+di "jeje"
+}
+}
+rename `var'  synth_`var'
+
+keep synth_`var' ydep* country_name countrynum dem tdemoc lag* year y yy*
+order year synth_`var' countrynum country_name  tdemoc dem y ydep* lag* 
+keep if year==`t0'
+replace synth_`var'=1 
+replace tdemoc=0 if tdemoc==.
+save "$auxdata/synth_`var'.dta", replace
+restore
+}
+
+
+//// Get weights and merge with events ////
+use DDCG_with_events, clear 
+xtset countrynum year
+
+foreach var of varlist  event_*{
+preserve
+quiet su year if `var'==1
+local t0 = r(mean)
+sca t0= r(mean)
+sca t10=t0-10
+sca t15=t0-15
+quiet su countrynum if `var'== 1
+sca tcountry=r(mean)
+
+
+replace `var'=1 if `var'==. & countrynum==tcountry
+quietly drop if `var'==.
+quietly drop if year<t10 // Critical 1
+
+egen countrynum2=group(country_name)
+order countrynum2 
+quiet su countrynum2 
+local mincountry=r(min)
+local maxcountry=r(max)
+
+forvalues i=`mincountry'/`maxcountry'{
+quiet su year if countrynum2==`i'
+local N=r(N)
+local N5= `N'-10 // Critical 2
+quiet su y if countrynum2==`i'
+
+if r(N)<`N' {
+quietly drop if countrynum2==`i' 
+}
+else{
+}
+}
+*/
+forvalues k=1/10{
+local t`k'=t0-`k'
+}
+
+local t0=t0
+local tcountry=tcountry
+//Controls must have y data for at least 10 years before treatment
+
+cap: quiet synth y  y(`t1') y(`t2') y(`t3') y(`t4'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s1_`var'", replace) 
+if _rc==0{
+
+use "$auxdata/s1_`var'.dta", clear
+
+rename _Co_Number countrynum   
+rename _W_Weight weight 
+quietly keep countrynum weight
+quietly drop if countrynum==. & weight==.
+quietly merge 1:1 countrynum using "$auxdata/synth_`var'.dta"
+quietly drop _merge 
+save "$auxdata/synth_weight_`var'.dta", replace
+}
+else{
+di "s1 no corrió `var'"
+}
+
+cap: quiet  synth  y y(`t1') y(`t2') y(`t3') y(`t4') y(`t5') y(`t6') y(`t7') y(`t8') y(`t9') y(`t10') , trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s2_`var'", replace) 
+if _rc==0{
+di "s2 sí corrió `var'"
+use "$auxdata/s2_`var'", clear
+rename _Co_Number countrynum   
+rename _W_Weight weight 
+quietly keep countrynum weight
+quietly drop if countrynum==. & weight==.
+quietly merge 1:1 countrynum using "$auxdata/synth_`var'.dta"
+quietly drop _merge 
+save "$auxdata/synth2_weight_`var'.dta", replace 
+}
+else{
+di "s2 no corrió `var'"
+}
+
+restore
+}
+
+
+//////////// 
+
+////////////////////////////////
+//// ESTIMATE USING WEIGHTS 1///
+////////////////////////////////
 
 use DDCG_with_events, clear 
 foreach var of varlist event_*{
@@ -985,6 +991,51 @@ replace yad=`k' in `j'
 line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off)
 graph export "$figures/part5s1_weights.png", replace
 
+////////////////////////////////
+//// ESTIMATE USING WEIGHTS 2///
+////////////////////////////////
+
+
+use DDCG_with_events, clear 
+foreach var of varlist event_*{
+
+if "`var'"=="event_18_"{
+use "$auxdata/synth_weight_`var'.dta", clear
+}
+else{
+cap: append using "$auxdata/synth_weight_`var'.dta"
+}
+}
+
+foreach var of varlist synth_event_*{
+replace `var'=0 if `var'==.
+}
+
+replace weight=1 if weight==.
+//// Estimation
+
+forvalues s=0/45{
+quiet reg ydep`s' tdemoc lag* i.synth_event_*   [aw=weight], cluster(countrynum)
+if `s'==0{
+mat ests=(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+}
+else{
+mat ests=ests\(_b[tdemoc], r(table)[5,1],r(table)[6,1])
+mat colnames ests="b" "ll" "ul"
+}
+}
+
+svmat ests
+cap drop yad
+gen yad=. 
+forvalues i=0/45{
+local k=`i'-14
+local j=`i'+1
+replace yad=`k' in `j'
+}
+
+line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off)
+graph export "$figures/part5s1_weights.png", replace
 
 
 ////////////////////////////////
