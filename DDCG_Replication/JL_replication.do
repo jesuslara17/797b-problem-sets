@@ -468,7 +468,7 @@ di `i'
 di "Only one transition to democracy"
 local t0=r(mean)
 quiet su dem if year >=`t0' & countrynum==`i'
-if r(min)==r(max) & `t0'<1992{
+if r(min)==r(max) { // 1992 
 di " `i' is treated unit, democratized in `t0'"
 quietly replace tunit=1 if countrynum==`i'
 
@@ -546,27 +546,7 @@ restore
 ********************
 
 /// Proceed with estimation...
-// Preliminary code
-*List of all treated units, how to get it?
-//Store countrynum s.t. tunit=1 in a matrix
 
-quiet su countrynum 
-local mincountry=r(min)
-local maxcountry=r(max)
-mat T=.
-forvalues k=`mincountry'/`maxcountry'{
-quiet su tunit if countrynum==`k'
-if r(mean)==1{
-if T[1,1]==. {
-mat T=(`k')
-}
-else {
-mat T=(T \ `k')
-}
-}
-else {
-}
-}
 
 use DDCG_with_events, clear 
 
@@ -616,7 +596,17 @@ egen average_b= rowmean(b*)
 hist average_b, title (Effect of Democratization on Growth: Event Analysis) subtitle(Average 15-19 years after democratization) freq w(8) scheme(s1color) xtitle(Estimate) xlabel(#20) 
 graph export "$figures/4a.png",replace
 
-
+estpost su average_b
+eststo summary4a
+esttab summary4a using "$tables/summary4a.tex", ///
+     label noobs nonumbers nomtitles ty  booktabs replace        ///
+     cell((                                        ///
+            count(fmt(%9.0fc)  label(Obs.))        ///
+             mean(fmt(%10.2fc) label(Mean))        ///
+              p50(fmt(%8.1fc)  label(Median))      ///
+               sd(fmt(%10.2fc) label(Std. Dev.))   ///
+          )) ///
+title(Summary of Event-Estimates) 
 
 ****** 4 (b) ********
 *********************
@@ -627,32 +617,32 @@ If you can’t implement the FP SEs, at the minimum, show the distribution of es
 use DDCG_with_events, clear 
 
 foreach var of varlist event_*{
-use "$auxdata/`var'.dta",replace
+di "`var'"
+use "$auxdata/`var'.dta", clear
 egen ydepmean= rowmean(ydep30 ydep31 ydep32 ydep33 ydep34)
 rename `var' treatment
-quiet reg ydepmean treatment lag*, cluster(countrynum)
-
 if "`var'"=="event_18_"{
-if r(table)[5,1]!=.{
+quiet reg ydepmean treatment lag*, cluster(countrynum)
 mat ests=(_b[treatment],r(table)[5,1],r(table)[6,1])
 }
+
+
 else{
-di "problems of collinearity"
-}
-}
-else{
-quiet reg ydepmean treatment lag*, cluster(countrynum)
-if r(table)[5,1]!=.{
+cap: quiet reg ydepmean treatment lag*, cluster(countrynum)
+if _rc==0{
 mat ests= ests \ (_b[treatment],r(table)[5,1],r(table)[6,1])
 }
 else{
-di "problems of collinearity"
+di "No observations"
 }
 }
 }
 
 
 svmat ests 
+drop if ests2==. | ests3==.
+label var ests1 "Average Effect 15-19 years"
+
 gen evening=.
 forvalues i=1/22{
 replace evening=`i' in `i'
@@ -662,11 +652,25 @@ twoway ///
 rbar ests2 ests3 evening , xline(0) scheme(s1color) horizontal color(gs12) ||  ///
 scatter evening  ests1 if ests2>0 | ests3<0, mcolor(blue) || ///
 scatter evening  ests1 if ests2<0 & ests3>0, mcolor(red) ///
-ytitle(Event) xtitle(Estimate 15-19 years) legend(label(1 "lowe/upper 95%"  ) label(2 "Significant") label(3 "Non-significant"))
-graph export "$figures/4b.png"
+ytitle(Event) xtitle(Estimate 15-19 years) legend(label(1 "Lower/Upper 95%"  ) label(2 "Significant") label(3 "Non-significant"))
+graph export "$figures/4b.png", replace
+
+estpost su ests1
+eststo summary4b
+
+	
+esttab summary4b using "$tables/summary4b.tex", ///
+     label noobs nonumbers nomtitles ty  booktabs replace        ///
+     cell((                                        ///
+            count(fmt(%9.0fc)  label(Obs.))        ///
+             mean(fmt(%10.2fc) label(Mean))        ///
+              p50(fmt(%8.1fc)  label(Median))      ///
+               sd(fmt(%10.2fc) label(Std. Dev.))   ///
+          )) ///
+title(Summary of Event-Estimates) 
 
 
-// Ferman & Pinto 
+
 
 **** Do Conley Taber ¯\_(ツ)_/¯
 
@@ -849,12 +853,6 @@ di "jeje"
 }
 }
 
-
-
-
-
-order y
-
 forvalues k=1/10{
 local t`k'=t0-`k'
 }
@@ -895,8 +893,6 @@ di "s2 no corrió `var'"
 */
 restore
 }
-
-
 
 
 //////////// FIRST GET A FIGURE LIKE 4 WITHOUT WEIGHTS USING ALL EVENTS////////
