@@ -388,7 +388,7 @@ use DDCGdata_final, clear
 gen tdemoc=.  
 replace tdemoc=1 if dem==1 & l.dem==0 // captures the exact moment when a country transitions to democracy
 replace tdemoc=0 if dem==0 & l.dem==0 
-// 1) 4 lags in GDP. These will be covariates in our regression
+
 forvalues i=1/4{
 gen lag`i'y=l`i'.y
 }
@@ -405,7 +405,7 @@ gen ydep`i'=F`k'.y-L.y
 order country_name tdemoc year y ydep*
 keep if tdemoc!=.
 
-/// 4 lags 
+// Controlling for 4 GDP lags
 forvalues s=0/45{
 quiet reg ydep`s' tdemoc  lag*, cluster(wbcode2)
 if `s'==0{
@@ -524,7 +524,7 @@ use ${home}/DDCGdata_final, clear
 
 // The code below identifies treated units (countries that transitioned to democracy with no reversals) and the clean controls associated to each treated unit (countries that did not have a transition before t0 and at least 20 year after)
 // We will use tunit for part 6, so it will assign a missing value to all countries which experienced a kind of transition 
-// Este loop me quedó bien culey!!! ¯\_(ツ)_/¯
+// ¯\_(ツ)_/¯
 
 egen countrynum= group(country_name)
 gen tdemoc=.
@@ -637,7 +637,7 @@ use DDCG_with_events, clear
 foreach var of varlist event_*{
 use "$auxdata/`var'.dta",replace
 
-forvalues s=30/33{
+forvalues s=30/34{
 quiet su ydep`s' if `var'==1
 di "`var'" `s' 
 di r(mean)
@@ -666,10 +666,10 @@ mat b`s'=b`s' \ (.)
 
 
 
-forvalues s=30/33{
+forvalues s=30/34{
 local k=`s'-15
 svmat b`s'
-replace b`s'=. if b`s'==0 // If the coefficient is exactly=0 it is because of problems of colinearity, idk why that happens ¯\_(ツ)_/¯
+replace b`s'=. if b`s'==0 // If the coefficient is exactly=0 it is because of problems of colinearity, idk why that happens 
 }
 
 egen average_b= rowmean(b*)
