@@ -35,33 +35,270 @@ xtset wbcode2 year
 ********PART 1*************************
 ****************************************
 ****************************************
+xtset wbcode2 year
 
+/// Program to calculate LR effect of democracy 
+
+capture program drop dynamiceffects
+		program define dynamiceffects, eclass
+		quietly: nlcom (effect1: _b[democracy]) ///
+			  (democracy: _b[democracy]) ///
+			  (lag1: _b[lag1]) ///
+			  (lag2: _b[lag2]) ///
+			  (lag3: _b[lag3]) ///
+			  (lag4: _b[lag4]) ///
+			  , post
+
+		quietly: nlcom (effect2: _b[effect1]*_b[lag1]+_b[democracy]) ///
+			  (effect1: _b[effect1]) ///
+			  (democracy: _b[democracy]) ///
+			  (lag1: _b[lag1]) ///
+			  (lag2: _b[lag2]) ///
+			  (lag3: _b[lag3]) ///
+			  (lag4: _b[lag4]) ///
+			  , post
+
+		quietly: nlcom (effect3: _b[effect2]*_b[lag1]+_b[effect1]*_b[lag2]+_b[democracy]) ///
+			  (effect2: _b[effect2]) ///
+			  (effect1: _b[effect1]) ///
+			  (democracy: _b[democracy]) ///
+			  (lag1: _b[lag1]) ///
+			  (lag2: _b[lag2]) ///
+			  (lag3: _b[lag3]) ///
+			  (lag4: _b[lag4]) ///
+			  , post
+			  
+		quietly: nlcom (effect4: _b[effect3]*_b[lag1]+_b[effect2]*_b[lag2]+_b[effect1]*_b[lag3]+_b[democracy]) ///
+			  (effect3: _b[effect3]) ///
+			  (effect2: _b[effect2]) ///
+			  (effect1: _b[effect1]) ///
+			  (democracy: _b[democracy]) ///
+			  (lag1: _b[lag1]) ///
+			  (lag2: _b[lag2]) ///
+			  (lag3: _b[lag3]) ///
+			  (lag4: _b[lag4]) ///
+			  , post	  
+		
+		forvalues j=5(1)25{	  
+		local j1=`j'-1
+		local j2=`j'-2
+		local j3=`j'-3
+		local j4=`j'-4
+
+		quietly: nlcom (effect`j': _b[effect`j1']*_b[lag1]+_b[effect`j2']*_b[lag2]+_b[effect`j3']*_b[lag3]+_b[effect`j4']*_b[lag4]+_b[democracy]) ///
+			  (effect`j1': _b[effect`j1']) ///
+			  (effect`j2': _b[effect`j2']) ///
+			  (effect`j3': _b[effect`j3']) ///
+			  (democracy: _b[democracy]) ///
+			  (lag1: _b[lag1]) ///
+			  (lag2: _b[lag2]) ///
+			  (lag3: _b[lag3]) ///
+			  (lag4: _b[lag4]) ///
+			  , post	  	  
+
+		}
+
+		quietly: nlcom (effect25: _b[effect25]) ///
+			  (longrun: _b[democracy]/(1-_b[lag1]-_b[lag2]-_b[lag3]-_b[lag4])) ///
+			  (democracy: _b[democracy]) ///
+			  (persistence: _b[lag1]+_b[lag2]+_b[lag3]+_b[lag4]) ///
+			  (lag1: _b[lag1]) ///
+			  (lag2: _b[lag2]) ///
+			  (lag3: _b[lag3]) ///
+			  (lag4: _b[lag4]) ///
+			  , post
+		ereturn display
+		end
 
 /// Replication of table 2
+/////////////////////////////
 
-
-quiet {
+quietly{
+////////////
+//1 lag////
 xtreg y dem l.y i.yy*, fe r cluster(wbcode2) 
 eststo T2_1
+// export number of obs and countries
+local N1=e(N)
+local C1=e(N_clust)
+file open myfile using ${numbers}/N1.tex, ///
+ write text replace 
+file write myfile "`N1'" 
+file close myfile
+
+file open myfile using ${numbers}/C1.tex, ///
+ write text replace 
+file write myfile "`C1'" 
+file close myfile
+
+quiet nlcom  (democracy: _b[dem]) (lag1: _b[L.y])  (lag2: 0)  (lag3: 0)  (lag4: 0), post
+dynamiceffects
+eststo T2_1aa
+estimates restore T2_1
 nlcom (longrun: _b[dem]/(1-_b[l1.y])) (persistence: _b[l1.y]) , post
 eststo T2_1a
 
+////////////
+//2 lags//////
 xtreg y dem l(1/2).y i.yy*, fe r cluster(wbcode2)
 eststo T2_2
+// export number of obs and countries
+local N2= e(N)
+local C2= e(N_clust)
+file open myfile using ${numbers}/N2.tex, ///
+ write text replace 
+file write myfile "`N2'" 
+file close myfile
 
+file open myfile using ${numbers}/C2.tex, ///
+ write text replace 
+file write myfile "`C2'" 
+file close myfile
+
+nlcom (democracy: _b[dem])  (lag1: _b[L.y])  (lag2: _b[L2.y])  (lag3: 0)  (lag4: 0), post
+dynamiceffects
+eststo T2_2aa
+estimates restore T2_2
 nlcom (longrun: _b[dem]/(1-_b[l1.y]-_b[l2.y])) (persistence: _b[l1.y]+_b[l2.y]) , post
 eststo T2_2a
 
+//4 lags 
 xtreg y dem l(1/4)y i.yy*, fe r cluster(wbcode2)
 eststo T2_3
+// export number of obs and countries
+local N3= e(N)
+local C3= e(N_clust)
+file open myfile using ${numbers}/N3.tex, ///
+ write text replace 
+file write myfile "`N3'" 
+file close myfile
+
+file open myfile using ${numbers}/C3.tex, ///
+ write text replace 
+file write myfile "`C3'" 
+file close myfile
+
+nlcom (democracy: _b[dem])  (lag1: _b[L.y])  (lag2: _b[L2.y])  (lag3: _b[L3.y])  (lag4: _b[L4.y]), post
+dynamiceffects
+eststo T2_3aa
+estimates restore T2_3
 nlcom (longrun: _b[dem]/(1-_b[l1.y]-_b[l2.y]-_b[l3.y]-_b[l4.y])) (persistence: _b[l1.y]+_b[l2.y]+_b[l3.y]+_b[l4.y]) , post
 eststo T2_3a
 }
 
 esttab T2_1 T2_2 T2_3 using "$tables/Table2.tex", keep(dem  L.y  L2.y  L3.y  L4.y) varlabels(dem "Democracy" L.y "Log GDP, first lag" L2.y "Log GDP, second lag" L3.y "Log GDP, third lag" L4.y "Log GDP, fourth lag") fragment nonum noobs nonotes mlabels("(1)" "(2)" "(3)") b(3) se ty replace nostar  wrap gaps
 
-esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-run effect of democracy" persistence "Persistence") fragment nonum nonotes  b(3) se ty append nostar nomtitles nolines wrap gaps
+esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-run effect of democracy" persistence "Persistence") fragment noobs nonum nonotes  b(3) se ty append nostar nomtitles nolines wrap gaps
 
+esttab T2_1aa T2_2aa T2_3aa using "$tables/Table2.tex", keep(effect25) varlabels(effect25 "Effect of democracy: 25 years") fragment noobs nonum nonotes  b(3) se ty append nostar nomtitles nolines wrap gaps
+
+////////////////////////
+/// UNIT ROOTS TESTS ///
+////////////////////////
+capture program drop unitroot
+program define unitroot, rclass
+syntax anything[, lags(integer 3) varalt mumain(real -.53796) sigmamain(real .85408)]
+	local 0 `anything' 
+	gettoken yvar 0 : 0
+	gettoken excov 0 : 0, match(par) 
+	gettoken bpvar 0 : 0, match(par) 
+	
+quietly: if `lags'>=1{
+reg d.`yvar' l(1/`lags').d.`yvar' yy* i.wbcode2 `excov'
+}
+quietly: if `lags'==0{
+reg d.`yvar' yy* i.wbcode2 `excov'
+}
+quietly: predict e if e(sample), resid
+
+if `lags'==0{
+return scalar SA=1
+local SA=1
+}
+if `lags'==1{
+return scalar SA=1/abs(1-(_b[LD.`yvar']))
+local SA=1/abs(1-(_b[LD.`yvar']))
+}
+if `lags'==2{
+return scalar SA=1/abs(1-(_b[LD.`yvar']+_b[L2D.`yvar']))
+local  SA=1/abs(1-(_b[LD.`yvar']+_b[L2D.`yvar']))
+}
+if `lags'==3{
+return scalar SA=1/abs(1-(_b[LD.`yvar']+_b[L2D.`yvar']+_b[L3D.`yvar']))
+local SA=1/abs(1-(_b[LD.`yvar']+_b[L2D.`yvar']+_b[L3D.`yvar']))
+}
+if `lags'==4{
+return scalar SA=1/abs(1-(_b[LD.`yvar']+_b[L2D.`yvar']+_b[L3D.`yvar']+_b[L4D.`yvar']))
+local SA=1/abs(1-(_b[LD.`yvar']+_b[L2D.`yvar']+_b[L3D.`yvar']+_b[L4D.`yvar']))
+}
+
+quietly: if `lags'>=1{
+reg l.`yvar' l(1/`lags').d.`yvar' yy* i.wbcode2 `excov'
+}
+quietly: if `lags'==0{
+reg l.`yvar'  yy* i.wbcode2 `excov'
+}
+quietly: predict v if e(sample), resid
+
+quietly: if `lags'>=1{
+reg d.`yvar' l.`yvar' l(1/`lags').d.`yvar' yy* i.wbcode2
+}
+quietly: if `lags'==0{
+reg d.`yvar' l.`yvar' yy* i.wbcode2
+}
+quietly: predict residual if e(sample), resid
+quietly: gen res2=residual^2
+quietly: bysort wbcode2: egen vari=mean(res2)
+quietly: gen sigmai=sqrt(vari)
+
+quietly: gen e_est=e/sigmai
+quietly: gen v_est=v/sigmai
+
+quietly: reg e_est v_est, noconstant
+return scalar tdelta=_b[v_est]/_se[v_est]
+return scalar stddelta=_se[v_est]
+local tdelta=_b[v_est]/_se[v_est]
+local stddelta=_se[v_est]
+
+quietly: predict z if e(sample), resid
+quietly: gen z2=z^2
+quietly: sum z2
+return scalar sigma2=r(mean)
+return scalar num=r(N)
+local sigma2=r(mean)
+local num=r(N)
+
+local tadjmain=(`tdelta'-`num'*`SA'*`stddelta'*`mumain'/`sigma2')/`sigmamain'
+return scalar pvalmain=normal(`tadjmain')
+return scalar  tadjmain=(`tdelta'-`num'*`SA'*`stddelta'*`mumain'/`sigma2')/`sigmamain'
+
+drop e v residual res2 vari sigmai e_est v_est z z2
+end
+
+foreach i of numlist 0 1 3{
+
+unitroot y (dem) (), lags(`i')
+local t`i'lag= r(tadjmain)
+local t`i'lagc: display %9.2f `t`i'lag' 
+
+file open myfile using ${numbers}/t`i'lagc.tex, ///
+ write text replace 
+file write myfile "`t`i'lagc'" 
+file close myfile
+
+}
+
+foreach i of numlist 0 1 3{
+
+unitroot y (dem) (), lags(`i')
+local p`i'lag= r(pvalmain)
+local p`i'lagc: display %9.2f `p`i'lag' 
+
+file open myfile using ${numbers}/p`i'lagc.tex, ///
+ write text replace 
+file write myfile "`p`i'lagc'" 
+file close myfile
+}
 
 ///////////////////////////////
 // Replication of table 5/////
@@ -249,7 +486,7 @@ end
 //////////////////
 ////ESTIMATION ///
 //////////////////
-
+set seed 12345
 //// A. Adjustment regression 
 xtset, clear
 bootstrap _b, reps(10) cluster(wbcode2): ra 
@@ -286,7 +523,7 @@ eststo ra7
 esttab ra* using "$tables/T5_ra.tex", replace varlabels (ra "Avg. effect on log GDP") fragment nostar nonum nonotes se nomtitles nolines wrap gaps ty  noobs b(3)
 
 /// B. Inverse propensity score reweighting
-
+set seed 12345
 xtset, clear
 bootstrap _b, reps(10) cluster(wbcode2): psr
 parmest, format(estimate min95 max95) saving("$auxdata/psr", replace)
@@ -323,7 +560,7 @@ esttab psr* using "$tables/T5_psr.tex", replace varlabels (psr "Avg. effect on l
 
 
 // C. Doubly robust estimator
-
+set seed 12345
 xtset, clear
 bootstrap _b, reps(10) cluster(wbcode2): dr
 parmest, format(estimate min95 max95) saving("$auxdata/dr", replace)
@@ -838,6 +1075,7 @@ ereturn post b V
 end
 
 //bootstrap standard errors
+set seed 12345
 bootstrap _b: fe_event
 nlcom (tdemoc: (_b[c1]+_b[c2]+_b[c3]+_b[c4] +_b[c5])/5), post
 eststo avb

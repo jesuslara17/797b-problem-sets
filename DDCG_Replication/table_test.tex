@@ -1,0 +1,33 @@
+\begin{table}[htbp]\centering
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\caption{Within Estimates for Effect of (Log) GDP Per Capita}
+\begin{tabular}{l*{3}{c}}
+\hline\hline
+            &\multicolumn{1}{c}{(1)}         &\multicolumn{1}{c}{(2)}         &\multicolumn{1}{c}{(3)}         \\
+\hline
+Democracy   &       0.973\sym{***}&       0.651\sym{**} &       0.787\sym{***}\\
+            &     (0.294)         &     (0.248)         &     (0.226)         \\
+log GDP, first lag&       0.973\sym{***}&       1.266\sym{***}&       1.238\sym{***}\\
+            &     (0.006)         &     (0.038)         &     (0.038)         \\
+log GDP, second lag&       0.000         &      -0.300\sym{***}&      -0.207\sym{***}\\
+            &         (.)         &     (0.037)         &     (0.046)         \\
+log GDP, third lag&       0.000         &       0.000         &      -0.026         \\
+            &         (.)         &         (.)         &     (0.028)         \\
+log GDP, fourth lag&       0.000         &       0.000         &      -0.043\sym{*}  \\
+            &         (.)         &         (.)         &     (0.017)         \\
+Long-run effect of democracy&      35.587\sym{*}  &      19.599\sym{*}  &      21.240\sym{**} \\
+            &    (13.998)         &     (8.595)         &     (7.215)         \\
+Effect of democracy after 25 years&      17.791\sym{**} &      13.800\sym{*}  &      16.895\sym{**} \\
+            &     (5.649)         &     (5.550)         &     (5.297)         \\
+Persistence of GDP process&       0.973\sym{***}&       0.967\sym{***}&       0.963\sym{***}\\
+            &     (0.006)         &     (0.005)         &     (0.005)         \\
+\hline
+Observations&        6790         &        6642         &        6336         \\
+Countries in sample&         175         &         175         &         175         \\
+\hline\hline
+\multicolumn{4}{l}{\footnotesize Note: This table presents estimates on the effect of democracy on log GDP per capita.}\\
+\multicolumn{4}{l}{\footnotesize The reported coefficient on democracy is multiplied by 100. Standard errors robust}\\
+\multicolumn{4}{l}{\footnotesize against heteroskedastity and serial correlation at the country level are reported in}\\
+\multicolumn{4}{l}{\footnotesize parentheses}\\
+\end{tabular}
+\end{table}
