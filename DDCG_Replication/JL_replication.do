@@ -1,4 +1,4 @@
-//  		  	797B Jesús Lara	☭	 ///
+//  		  	797B Jesús Lara		 ///
 /// 	Critical Replication and extension of   ///
 ///DDCG by Acemoglu, Naidu, Restrepo & Robinson (2018) ///
 
@@ -489,7 +489,7 @@ end
 set seed 12345
 //// A. Adjustment regression 
 xtset, clear
-bootstrap _b, reps(10) cluster(wbcode2): ra 
+bootstrap _b, reps(20) cluster(wbcode2): ra 
 parmest, format(estimate min95 max95) saving("$auxdata/ra", replace)
 eststo main_ra
 // Get 5 year averages
@@ -525,7 +525,7 @@ esttab ra* using "$tables/T5_ra.tex", replace varlabels (ra "Avg. effect on log 
 /// B. Inverse propensity score reweighting
 set seed 12345
 xtset, clear
-bootstrap _b, reps(10) cluster(wbcode2): psr
+bootstrap _b, reps(20) cluster(wbcode2): psr
 parmest, format(estimate min95 max95) saving("$auxdata/psr", replace)
 eststo main_psr 
 // Get 5 year averages
@@ -562,7 +562,7 @@ esttab psr* using "$tables/T5_psr.tex", replace varlabels (psr "Avg. effect on l
 // C. Doubly robust estimator
 set seed 12345
 xtset, clear
-bootstrap _b, reps(10) cluster(wbcode2): dr
+bootstrap _b, reps(20) cluster(wbcode2): dr
 parmest, format(estimate min95 max95) saving("$auxdata/dr", replace)
 eststo main_dr 
 // Get 5 year averages
@@ -1188,7 +1188,7 @@ if r(N)<`N' {
 drop if countrynum2==`i' 
 }
 else{
-di "jeje"
+di "No"
 }
 }
 rename `var'  synth_`var'
