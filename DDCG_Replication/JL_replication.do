@@ -1,4 +1,4 @@
-//  		 ☭ 	797B Jesús Lara	☭	 ///
+//  		  	797B Jesús Lara	☭	 ///
 /// 	Critical Replication and extension of   ///
 ///DDCG by Acemoglu, Naidu, Restrepo & Robinson (2018) ///
 
@@ -12,13 +12,34 @@ global numbers "$home/numbers"
 cd $home
 use DDCGdata_final, clear
 xtset wbcode2 year
-********************
-****** PART 1*******
-********************
+
+
+
+*******PART 1****************************
+****************************************
+****************************************
+*******PART 1****************************
+****************************************
+****************************************
+****************************************
+****** PART 1***************************
+****************************************
+****************************************
+****************************************
+********PART 1***************************
+****************************************
+****************************************
+****************************************
+****************************************
+****************************************
+********PART 1*************************
+****************************************
+****************************************
+
 
 /// Replication of table 2
 
-/*
+
 quiet {
 xtreg y dem l.y i.yy*, fe r cluster(wbcode2) 
 eststo T2_1
@@ -40,7 +61,7 @@ eststo T2_3a
 esttab T2_1 T2_2 T2_3 using "$tables/Table2.tex", keep(dem  L.y  L2.y  L3.y  L4.y) varlabels(dem "Democracy" L.y "Log GDP, first lag" L2.y "Log GDP, second lag" L3.y "Log GDP, third lag" L4.y "Log GDP, fourth lag") fragment nonum noobs nonotes mlabels("(1)" "(2)" "(3)") b(3) se ty replace nostar  wrap gaps
 
 esttab T2_1a T2_2a T2_3a using "$tables/Table2.tex", varlabels (longrun "Long-run effect of democracy" persistence "Persistence") fragment nonum nonotes  b(3) se ty append nostar nomtitles nolines wrap gaps
-*/
+
 
 ///////////////////////////////
 // Replication of table 5/////
@@ -339,9 +360,27 @@ esttab dr* using "$tables/T5_dr.tex", replace varlabels (dr "Avg. effect on log 
 
 
 */
-********************
-****** PART 2*******
-********************
+*******PART 2****************************
+****************************************
+****************************************
+*******PART 2****************************
+****************************************
+****************************************
+****************************************
+****** PART 2***************************
+****************************************
+****************************************
+****************************************
+********PART 2***************************
+****************************************
+****************************************
+****************************************
+****************************************
+****************************************
+********PART 2*************************
+****************************************
+****************************************
+
 
 /// Now it is correct
 
@@ -418,11 +457,29 @@ line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratizatio
 graph export "$figures/part2b.png", as(png) replace
 
 
-********************
-****** PART 3*******
-********************
+*******PART 3****************************
+****************************************
+****************************************
+*******PART 3****************************
+****************************************
+****************************************
+****************************************
+****** PART 3***************************
+****************************************
+****************************************
+****************************************
+********PART 3***************************
+****************************************
+****************************************
+****************************************
+****************************************
+****************************************
+********PART 3*************************
+****************************************
+****************************************
 
-/// Replicate the figures?
+
+/// Replicate the figures
 
 * ¯\_(ツ)_/¯
 
@@ -442,9 +499,27 @@ line estimate event, lcolor(black) || line min95 event, lcolor(gray) lpattern(da
 graph export  "$figures/part3`type'.png", replace
 }
 
-********************
-****** PART 4*******
-********************
+*******PART 4****************************
+****************************************
+****************************************
+*******PART 4****************************
+****************************************
+****************************************
+****************************************
+****** PART 4***************************
+****************************************
+****************************************
+****************************************
+********PART 4***************************
+****************************************
+****************************************
+****************************************
+****************************************
+****************************************
+********PART 4*************************
+****************************************
+****************************************
+
 use ${home}/DDCGdata_final, clear
 
 // The code below identifies treated units (countries that transitioned to democracy with no reversals) and the clean controls associated to each treated unit (countries that did not have a transition before t0 and at least 20 year after)
@@ -542,9 +617,15 @@ save "$auxdata/`var'.dta", replace
 restore
 }
 
+********4(a)********
 ****** 4 (a) *******
 ********************
-
+********************
+********************
+********************
+********************
+*******4 (a)********
+********************
 /// Proceed with estimation...
 
 
@@ -609,8 +690,15 @@ esttab summary4a using "$tables/summary4a.tex", ///
           )) ///
 title(Summary of Event-Estimates) 
 
-****** 4 (b) ********
-*********************
+********4(b)********
+****** 4 (b) *******
+********************
+********************
+********************
+********************
+********************
+*******4 (b)********
+********************
 
 /*The basic  steps are described in Ferman and Pinto’s paper (p. 457-458), which is in our syllabus Yes, you’re right it’s Figure D1, I’ll make that correction. You can use the population of the country as the M, or can simply set M=1 for all countries for simplicity (in which case the estimates are basically like Conley and Taber and don’t correct for heteroscedasticty). 
 
@@ -680,9 +768,15 @@ title(Summary of Event-Estimates)
 
 // Prepare dataset, same than as the beginning of par 4 but keeping all years for treated countries
 
-
-****** 4 (c) ********
-*********************
+********4(c)********
+********4 (c) *******
+********************
+********************
+********************
+********************
+********************
+********4 (c)********
+********************
 
 // Stack in wide format
 use DDCG_with_events, clear 
@@ -697,14 +791,6 @@ drop year
 sa "$auxdata/fe_`var'.dta", replace
 }
 
-/*
-local var event_18_
-use "$auxdata/fe_`var'.dta", clear
-local var event_19_
-append using "$auxdata/fe_`var'.dta"
-local var event_20_
-append using "$auxdata/fe_`var'.dta"
-*/
 use DDCG_with_events, clear 
 foreach var of varlist event_*{
 
@@ -809,9 +895,27 @@ line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratizatio
 graph export "$figures/part5no_weights.png", replace
 
 
-********************
-****** PART 5*******
-********************
+*******PART 5***************************
+****************************************
+****************************************
+*******PART 5***************************
+****************************************
+****************************************
+****************************************
+****** PART 5***************************
+****************************************
+****************************************
+****************************************
+********PART 5**************************
+****************************************
+****************************************
+****************************************
+****************************************
+****************************************
+********PART 5**************************
+****************************************
+****************************************
+
 
 ///////////// Get synth_events ///////////
 //////////////////////////////////////////
@@ -864,7 +968,6 @@ restore
 //// Get weights and merge with events ////
 use DDCG_with_events, clear 
 xtset countrynum year
-
 foreach var of varlist  event_*{
 preserve
 quiet su year if `var'==1
@@ -874,24 +977,19 @@ sca t10=t0-10
 sca t15=t0-15
 quiet su countrynum if `var'== 1
 sca tcountry=r(mean)
-
-
 replace `var'=1 if `var'==. & countrynum==tcountry
 quietly drop if `var'==.
 quietly drop if year<t10 // Critical 1
-
 egen countrynum2=group(country_name)
 order countrynum2 
 quiet su countrynum2 
 local mincountry=r(min)
 local maxcountry=r(max)
-
 forvalues i=`mincountry'/`maxcountry'{
 quiet su year if countrynum2==`i'
 local N=r(N)
 local N5= `N'-10 // Critical 2
 quiet su y if countrynum2==`i'
-
 if r(N)<`N' {
 quietly drop if countrynum2==`i' 
 }
@@ -902,16 +1000,12 @@ else{
 forvalues k=1/10{
 local t`k'=t0-`k'
 }
-
 local t0=t0
 local tcountry=tcountry
 //Controls must have y data for at least 10 years before treatment
-
 cap: quiet synth y  y(`t1') y(`t2') y(`t3') y(`t4'), trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s1_`var'", replace) 
 if _rc==0{
-
 use "$auxdata/s1_`var'.dta", clear
-
 rename _Co_Number countrynum   
 rename _W_Weight weight 
 quietly keep countrynum weight
@@ -921,12 +1015,53 @@ quietly drop _merge
 save "$auxdata/synth_weight_`var'.dta", replace
 }
 else{
-di "s1 no corrió `var'"
+di "s1 didn't run `var'"
 }
+restore
+}
+/////
+/// Repeat for S2 with 10 pre-treatment outcomes as predictors (couldn't) find a way to do it more economically
+use DDCG_with_events, clear 
+xtset countrynum year
 
+foreach var of varlist  event_*{
+preserve
+quiet su year if `var'==1
+local t0 = r(mean)
+sca t0= r(mean)
+sca t10=t0-10
+sca t15=t0-15
+quiet su countrynum if `var'== 1
+sca tcountry=r(mean)
+replace `var'=1 if `var'==. & countrynum==tcountry
+quietly drop if `var'==.
+quietly drop if year<t10 // Critical 1
+egen countrynum2=group(country_name)
+order countrynum2 
+quiet su countrynum2 
+local mincountry=r(min)
+local maxcountry=r(max)
+forvalues i=`mincountry'/`maxcountry'{
+quiet su year if countrynum2==`i'
+local N=r(N)
+local N5= `N'-10 // Critical 2
+quiet su y if countrynum2==`i'
+if r(N)<`N' {
+quietly drop if countrynum2==`i' 
+}
+else{
+}
+}
+*/
+forvalues k=1/10{
+local t`k'=t0-`k'
+}
+local t0=t0
+local tcountry=tcountry
+//Controls must have y data for at least 10 years before treatment
 cap: quiet  synth  y y(`t1') y(`t2') y(`t3') y(`t4') y(`t5') y(`t6') y(`t7') y(`t8') y(`t9') y(`t10') , trunit(`tcountry')  trperiod(`t0') keep("$auxdata/s2_`var'", replace) 
 if _rc==0{
-di "s2 sí corrió `var'"
+di "s2 did run `var'"
 use "$auxdata/s2_`var'", clear
 rename _Co_Number countrynum   
 rename _W_Weight weight 
@@ -937,14 +1072,10 @@ quietly drop _merge
 save "$auxdata/synth2_weight_`var'.dta", replace 
 }
 else{
-di "s2 no corrió `var'"
+di "s2 didn't run `var'"
 }
-
 restore
 }
-
-
-//////////// 
 
 ////////////////////////////////
 //// ESTIMATE USING WEIGHTS 1///
@@ -1000,10 +1131,10 @@ use DDCG_with_events, clear
 foreach var of varlist event_*{
 
 if "`var'"=="event_18_"{
-use "$auxdata/synth_weight_`var'.dta", clear
+use "$auxdata/synth2_weight_`var'.dta", clear
 }
 else{
-cap: append using "$auxdata/synth_weight_`var'.dta"
+cap: append using "$auxdata/synth2_weight_`var'.dta"
 }
 }
 
@@ -1035,84 +1166,7 @@ replace yad=`k' in `j'
 }
 
 line ests1 yad, lcolor(black) scheme(s1color) xtitle(Years around democratization) ytitle(Change in GDP per capita log points) yline(0, lcolor(black) lpattern(dash))||line ests2 yad,  lcolor(gray) lpattern(dash)||line ests3 yad,  lcolor(gray) lpattern(dash) legend(off)
-graph export "$figures/part5s1_weights.png", replace
-
-
-////////////////////////////////
-////////////////////////////////
-////////////////////////////////
-////////////////////////////////
-
-
-
-local var event_20_   
-use "$auxdata/`var'.dta", clear
-
-merge 1:1 countrynum using "$auxdata/s1_`var'.dta"
-drop _merge
-merge 1:1 countrynum using "$auxdata/s2_`var'.dta"
-drop _merge
-
-replace s1w_`var'=0 if s1w_`var'==.
-replace s2w_`var'=0 if s2w_`var'==.
-replace s1w_`var'=1 if `var'==1
-replace s2w_`var'=1 if `var'==1
-
-reg ydep30 `var'  [aw=s1w_`var'], robust
-reg ydep31 `var' [aw=s1w_`var'], robust
-reg ydep32 `var'  [aw=s1w_event_18_], robust
-reg ydep33 `var'  [aw=s1w_event_18_], robust
-reg ydep34 `var'  [aw=s1w_event_18_], robust
-
-//////// Option 2, get averages of weights //////////
-
-local var event_18_   
-use "$auxdata/`var'.dta", clear
-
-
-
-use DDCG_with_events, clear
-foreach var of varlist  event_* {
-cap: merge m:1 countrynum using "$auxdata/s1_`var'.dta"
-cap: drop _merge
-}
-
-egen s1w= rowmean(s1w_*)
-
-foreach var of varlist  event_* {
-cap: merge m:1 countrynum using "$auxdata/s2_`var'.dta"
-cap: drop _merge
-}
-
-
-
-use DDCG_with_events, clear
-local var event_18_
-merge m:1 countrynum using "$auxdata/s1_`var'.dta"
-drop _merge
-merge m:1 countrynum using "$auxdata/s2_`var'.dta"
-drop _merge
-
-local var event_19_
-merge m:1 countrynum using "$auxdata/s1_`var'.dta"
-drop _merge
-merge m:1 countrynum using "$auxdata/s2_`var'.dta"
-drop _merge
-
-local var event_20_
-merge m:1 countrynum using "$auxdata/s1_`var'.dta"
-drop _merge
-merge m:1 countrynum using "$auxdata/s2_`var'.dta"
-drop _merge
-
-local var event_20_
-use "$auxdata/s2_`var'", replace
-
-
-
-
-
-******************
+graph export "$figures/part5s2_weights.png", replace
 
 
 ********************
